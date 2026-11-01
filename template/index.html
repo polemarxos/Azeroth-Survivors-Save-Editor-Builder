@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Azeroth Survivors Save Editor</title>
+<style>
+:root{
+  --bg:#0e1319; --bg2:#141b23; --panel:#18212b; --panel2:#1d2833; --ink:#e8edf2; --muted:#93a1b0; --line:#2a3745; --line2:#374657;
+  --gold:#e0b04f; --gold2:#f3d38a; --accent:#e0b04f; --accent-ink:#1a1405; --blue:#5aa9d6;
+  --ok:#7fd59d; --ok-bg:#12281b; --warn:#f0b36b; --warn-bg:#32250f; --bad:#ff9b9e; --bad-bg:#341a1c;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light){
+  :root{ --bg:#eef1f5; --bg2:#e6eaf0; --panel:#ffffff; --panel2:#f4f6f9; --ink:#1b2430; --muted:#5d6b7a; --line:#d5dce5; --line2:#c2ccd8;
+    --gold:#a9740b; --gold2:#7d5507; --accent:#a9740b; --accent-ink:#ffffff; --blue:#1f6f8b;
+    --ok:#1b6b3a; --ok-bg:#e3f4e9; --warn:#8a4a00; --warn-bg:#fff2e0; --bad:#a3262a; --bad-bg:#fde8e8; color-scheme: light; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 500px at 50% -120px,var(--bg2),var(--bg));background-color:var(--bg);color:var(--ink);font:14.5px/1.5 "Segoe UI",system-ui,-apple-system,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:0 18px 90px}
+.top{display:flex;align-items:center;gap:14px;padding:22px 0 18px;border-bottom:1px solid var(--line);margin-bottom:20px}
+.brand{width:46px;height:46px;border-radius:10px;border:2px solid var(--gold);background:var(--panel);display:grid;place-items:center;overflow:hidden;box-shadow:0 0 0 3px rgba(224,176,79,.15)}
+.brand .ic{width:100%;height:100%;border:0;border-radius:0}
+.top h1{font-size:22px;margin:0;letter-spacing:.01em;font-weight:650}
+.top .tag{color:var(--muted);font-size:13px}
+.ver{margin-left:auto;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--gold2);border:1px solid var(--line2);background:var(--panel);padding:5px 11px;border-radius:999px;white-space:nowrap}
+h2{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--gold);margin:0 0 14px;font-weight:650}
+p{margin:0 0 10px}
+.sub{color:var(--muted)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 8px 24px -16px rgba(0,0,0,.6)}
+.drop{border:1.5px dashed var(--line2);border-radius:14px;padding:46px 20px;text-align:center;background:var(--panel);cursor:pointer;transition:.15s}
+.drop:hover,.drop.over{border-color:var(--gold);background:var(--panel2)}
+.drop strong{display:block;font-size:18px;margin-bottom:6px}
+.drop .big{width:56px;height:56px;margin:0 auto 14px;border-radius:12px;border:2px solid var(--gold)}
+button,.btn{font:inherit;font-size:13.5px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);padding:8px 14px;border-radius:8px;cursor:pointer;transition:.12s}
+button:hover{border-color:var(--gold);color:var(--gold2)}
+button.primary{background:linear-gradient(180deg,var(--gold2),var(--gold));color:var(--accent-ink);border-color:var(--gold);font-weight:650}
+button.primary:hover{filter:brightness(1.08);color:var(--accent-ink)}
+button.small{padding:3px 10px;font-size:12px}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+input[type=text],input[type=number],select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line2);border-radius:7px;padding:6px 9px;width:100%}
+input[type=checkbox]{accent-color:var(--gold);width:16px;height:16px}
+textarea{font-family:Consolas,"Courier New",monospace;font-size:12.5px;min-height:360px;line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(210px,100%),1fr));gap:10px}
+label.f{display:block;font-size:12px;color:var(--muted)}
+label.f input,label.f select{margin-top:4px}
+#stats label.f{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-transform:uppercase;letter-spacing:.06em;font-size:11px}
+#stats label.f input{font-size:18px;font-weight:600;background:transparent;border:0;border-bottom:1px solid var(--line2);border-radius:0;padding:2px 0;text-transform:none;letter-spacing:0}
+.status{padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:13.5px;border:1px solid transparent}
+.status.ok{background:var(--ok-bg);color:var(--ok);border-color:rgba(127,213,157,.25)}
+.status.warn{background:var(--warn-bg);color:var(--warn);border-color:rgba(240,179,107,.3)}
+.status.bad{background:var(--bad-bg);color:var(--bad)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;border-bottom:1px solid var(--line)}
+.tabs button{background:transparent;border:0;border-bottom:2px solid transparent;border-radius:0;padding:10px 14px;color:var(--muted);font-weight:600;margin-bottom:-1px}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-selected=true]{color:var(--gold2);border-bottom-color:var(--gold)}
+.ic{width:36px;height:36px;border-radius:7px;border:1px solid var(--line2);background:linear-gradient(135deg,var(--panel2),var(--bg));flex:none;object-fit:cover;display:inline-block}
+.ic.x{opacity:.35}
+.ic.cl{border-color:var(--gold)}
+.clsbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.clsbtn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 8px;min-width:76px;border-radius:10px;font-size:12px}
+.clsbtn .ic{width:42px;height:42px}
+.clsbtn[aria-pressed=true]{border-color:var(--gold);background:var(--panel2);color:var(--gold2);box-shadow:0 0 0 2px rgba(224,176,79,.2)}
+.cls{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:start;padding:12px 0;border-top:1px solid var(--line)}
+.cls:first-of-type{border-top:0}
+.cls .nm{font-weight:650;display:flex;flex-direction:column;gap:7px}
+.cls .nm .who{display:flex;align-items:center;gap:9px}
+.cls .nm .ic{width:30px;height:30px}
+.cls .grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:4px 10px}
+.cls .grid label,.tilec{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.meta{color:var(--muted);font-size:12px}
+.row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-bottom:18px}
+.tile{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:13px}
+.tile .tn{flex:1;min-width:0;line-height:1.25}
+.tile input[type=number]{width:54px;text-align:center;padding:4px 4px}
+.tile .mx{color:var(--muted);font-size:12px;width:26px}
+.tile:has(input:not([value="0"])) {border-color:var(--line2)}
+.tcheck{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-size:13px;cursor:pointer}
+.tcheck:has(input:checked){border-color:var(--gold);background:linear-gradient(90deg,rgba(224,176,79,.14),transparent)}
+.tcheck span{flex:1;line-height:1.25}
+.perk{display:grid;grid-template-columns:36px 1fr 70px;gap:12px;align-items:center;margin-bottom:8px}
+.perk .pn{font-size:13.5px}
+.perk .pn small{display:block}
+.hide{display:none!important}
+.bar{position:sticky;bottom:0;z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:12px 18px;margin:0 -18px}
+.bar .row{align-items:center}
+small{color:var(--muted)}
+code{background:var(--bg);border:1px solid var(--line);padding:1px 6px;border-radius:5px;font-size:12px}
+
+.trees{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
+.tree{background:linear-gradient(180deg,#1c1710,#120f0a);border:1px solid #5a4a2a;border-radius:10px;padding:10px 12px 14px;color:#e8dcc0}
+.tree h3{margin:0 0 10px;font-size:14px;letter-spacing:.05em;color:#f3d38a;display:flex;justify-content:space-between;align-items:baseline}
+.tree h3 span{font-size:12px;color:#b9a97f}
+.tgridg{display:grid;grid-template-columns:repeat(4,56px);grid-auto-rows:60px;gap:6px 14px;justify-content:center}
+.tcell{position:relative;width:52px;height:52px;border-radius:7px;border:2px solid #3a3326;background:#000;cursor:pointer;padding:0;display:block;align-self:center;justify-self:center;filter:saturate(.35) brightness(.7)}
+.tcell .ic{width:100%;height:100%;border:0;border-radius:5px;display:block}
+.tcell.on{filter:none;border-color:#e0b04f}
+.tcell.max{border-color:#f3d38a;box-shadow:0 0 8px rgba(243,211,138,.55)}
+.tcell.no{opacity:.45}
+.tcell .rk{position:absolute;right:-6px;bottom:-8px;min-width:22px;padding:0 4px;border-radius:9px;background:#0b0905;border:1px solid #5a4a2a;font-size:11px;line-height:17px;text-align:center;color:#6bff6b;font-weight:700}
+.tcell.max .rk{color:#ffd100}.tcell.on:not(.max) .rk{color:#6bff6b}.tcell:not(.on) .rk{color:#c9c9c9}
+.tcell:hover{border-color:#f3d38a}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:5px 12px;border-radius:999px;font-size:12.5px}
+.chip[aria-pressed=true]{border-color:var(--gold);color:var(--gold2);background:var(--panel2)}
+.achlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:10px}
+.ach{display:flex;gap:12px;align-items:flex-start;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:var(--panel);cursor:pointer;opacity:.6}
+.ach .ic{width:44px;height:44px}
+.ach b{display:block;font-size:14px;color:var(--ink)}
+.ach span{font-size:12.5px;color:var(--muted);line-height:1.35;display:block;margin-top:2px}
+.ach.on{opacity:1;border-color:var(--gold);background:linear-gradient(90deg,rgba(224,176,79,.12),transparent)}
+.ach.on .ic{border-color:var(--gold)}
+.ach input{margin-left:auto;margin-top:2px;flex:none}
+
+.gtiers{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.gtier{border-color:var(--tc);color:var(--tc);font-size:12px;padding:5px 12px;border-radius:999px;background:transparent}
+.gtier:hover{background:rgba(255,255,255,.06);color:var(--tc)}
+.gslot{margin-bottom:18px}
+.gslot h3{display:flex;align-items:center;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--gold);margin:0 0 8px;cursor:pointer;font-weight:650}
+.gslot h3 small{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:400}
+.gtiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:8px}
+.gt{position:relative;display:flex;align-items:center;gap:10px;padding:8px 10px;min-height:60px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);cursor:pointer;opacity:.6;transition:.12s}
+.gt:hover{opacity:.9}
+.gt select.st{margin-top:4px;font-size:11px;padding:1px 4px;border-radius:6px;width:auto;min-height:0;background:rgba(0,0,0,.4);color:var(--ink);border:1px solid var(--line)}
+.gt svg{width:38px;height:38px;flex:none;padding:5px;border-radius:8px;border:2px solid var(--tc);color:var(--tc);background:rgba(0,0,0,.35)}
+.gt .gn{min-width:0;flex:1;line-height:1.25;padding-right:10px}
+.gt .gn b{display:block;font-size:12.5px;font-weight:600;color:var(--ink);overflow-wrap:break-word;word-break:normal;hyphens:manual}
+.gt .gn span{display:block;font-size:11px;color:var(--tc);overflow-wrap:break-word}
+.gt .ck{position:absolute;top:6px;right:6px;width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line2);display:grid;place-items:center;font-size:11px;font-style:normal;color:transparent}
+.gt.on{opacity:1;border-color:var(--tc);background:linear-gradient(90deg,rgba(255,255,255,.06),transparent)}
+.gt.on .ck{background:var(--ok);border-color:var(--ok);color:#06210f}
+@media (max-width:520px){main{padding:0 12px 90px}.bar{margin:0 -12px;padding:12px}.cls{grid-template-columns:1fr}.cls .nm{flex-direction:row;align-items:center;justify-content:space-between}.cls .grid{grid-template-columns:repeat(auto-fill,minmax(min(170px,100%),1fr))}.gt{gap:8px;padding:8px}.gt .gn b{font-size:12px;padding-right:12px}.gt svg{width:34px;height:34px}.drop{padding:34px 14px}.top{flex-wrap:wrap}.ver{margin-left:0}.panel{padding:14px}.gtiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#specbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:14px}</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <div class="brand" id="brand"></div>
+    <div><h1>Azeroth Survivors Save Editor</h1><div class="tag">Reads, edits and re-seals your save. Everything runs in this page, and your file is never uploaded.</div></div>
+    <span class="ver">Version 2026-11-01 12:36</span>
+  </header>
+
+  <div id="loader" class="drop" tabindex="0" role="button" aria-label="Choose a save file">
+    <div class="big ic" id="bigico"></div><strong>Drop a save file here, or click to choose one</strong>
+    <span class="sub">Works with exported <code>.sav</code> files and with <code>characters.txt</code> (in <code>%APPDATA%\wenilla-rogue</code>)</span>
+    <input id="file" type="file" class="hide" accept=".sav,.txt,*/*">
+  </div>
+
+  <div id="editor" class="hide">
+    <div id="status"></div>
+
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="basic">Status</button>
+      <button role="tab" aria-selected="false" data-tab="zones">Zones</button>
+      <button role="tab" aria-selected="false" data-tab="heroic">Heroic Zones</button>
+      <button role="tab" aria-selected="false" data-tab="perks">Perks</button>
+      <button role="tab" aria-selected="false" data-tab="heroes">Heroes</button>
+      <button role="tab" aria-selected="false" data-tab="gear">Gear</button>
+      <button role="tab" aria-selected="false" data-tab="ach">Achievements</button>
+      <button role="tab" aria-selected="false" data-tab="coll">Pets &amp; tabards</button>
+      <button role="tab" aria-selected="false" data-tab="codex">Codex</button>
+      <button role="tab" aria-selected="false" data-tab="raw">Raw text</button>
+    </div>
+
+    <section id="tab-basic">
+      <div class="panel">
+        <h2>Status</h2>
+        <div id="stats" class="grid"></div>
+      </div>
+    </section>
+
+    <section id="tab-zones" class="hide">
+      <div class="panel">
+        <h2>Zones cleared per class</h2>
+        <p><small>Tick the zones each class has cleared. The game’s “unlocked” count is set for you from the furthest zone ticked. Un’Goro Crater, Scarlet Monastery and Naxxramas are new in the latest version.</small></p>
+        <div id="classes"></div>
+        <div class="row" style="margin-top:12px">
+          <button id="clearAll">Mark all zones cleared for every class</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-heroic" class="hide">
+      <div class="panel" id="heroicPanel">
+        <h2>Heroic difficulty per class</h2>
+        <p><small>Highest Heroic level beaten in each zone (I to V). Beating a level opens the next one, and lets that class’s gear from the zone go to that many stars. Setting a level also marks the zone as cleared and unlocked on the Zones tab.</small></p>
+        <div class="row" style="margin-bottom:14px"><button id="hAll">Set all Heroic V for all heroes</button><button id="hNone">Clear all Heroic progress</button></div>
+        <div id="heroic"></div>
+      </div>
+    </section>
+
+    <section id="tab-perks" class="hide">
+      <div class="panel">
+        <h2>Perk levels</h2>
+        <div id="perks"></div>
+        <p><small>Keep levels close to what you already have. A level above the game’s own maximum may be ignored or misbehave.</small></p>
+      </div>
+      <div class="panel" id="racePanel">
+        <h2>Races opened to every class</h2>
+        <div id="racelist" class="grid"></div>
+        <div class="row" style="margin-top:12px"><button id="rAll">Open all races</button></div>
+        <p><small>A race ticked here can be picked by every class. Without this record the game only offers each class its usual races.</small></p>
+      </div>
+    </section>
+
+    <section id="tab-heroes" class="hide">
+      <div class="panel">
+        <div id="clsbar" class="clsbar"></div>
+        <div class="row"><label class="f hide">Class <select id="hc"></select></label>
+          <label class="f">Talent experience <input id="hxp" type="number" min="0"></label>
+          <label class="f">Marks <input id="hmarks" type="number" min="0"></label>
+          <label class="f">Weapon glow <select id="hglow"></select></label>
+          <label class="f">Race <select id="hrace"></select></label><label class="f">Gender <select id="hgen"><option value="0">Male</option><option value="1">Female</option></select></label></div>
+        <p style="margin-top:10px"><small>Talent points come from experience. If you max every talent, also raise the experience a lot, or the game may not count all points as earned.</small></p>
+        <div class="row"><button id="xMax">Max talent experience (this class)</button><button id="xAll">Max talent experience (all classes)</button><button id="tMax">Max all talents</button><button id="tClr">Clear talents</button></div>
+      </div>
+      <div class="panel"><h2>Talents <small id="tpts" style="text-transform:none;letter-spacing:0;margin-left:8px"></small></h2><p><small>Left-click adds a point, right-click removes one, Shift-click fills or empties a talent.</small></p><div id="specbar"></div><div id="trees" class="trees"></div></div>
+    </section>
+    <section id="tab-gear" class="hide">
+      <div class="panel"><div id="clsbar2" class="clsbar"></div>
+        <div class="row"><button id="gCls">Select all gear (this class)</button><button id="gNone">Clear gear (this class)</button><button id="gAll">Select all gear (every class)</button><button id="gEq">Equip best gear (this class)</button></div>
+        <div class="row" style="margin-top:8px"><button id="sCls">Max stars (this class)</button><button id="sAll">Max stars (every class)</button><button id="sNone">Clear stars (this class)</button></div>
+        <p style="margin-top:10px"><small>Tap an item to mark it unlocked; unlocked items get a star level (0 to 5) you can change. Max stars only affects gear you have unlocked. Tap a tier button to toggle that tier for every slot, or a slot name to toggle that whole row. Item icons come from Blizzard's item data, which the game doesn't store, so tiles show the slot in the tier's rarity colour.</small></p></div>
+      <div class="panel"><div id="gearbox"></div></div>
+    </section>
+    <section id="tab-ach" class="hide">
+      <div class="panel"><div class="row" style="align-items:center"><div id="achchips" class="chips"></div>
+        <span style="flex:1"></span><button id="achSel" class="small">Select shown</button><button id="achClr" class="small">Clear shown</button></div>
+        <p style="margin:10px 0 0"><small id="achcount"></small></p></div>
+      <div id="achlist" class="achlist"></div>
+    </section>
+    <section id="tab-coll" class="hide">
+      <div class="panel"><h2>Pets</h2><p><small>Some pets and tabards are rewards for achievements; ticking one of those also grants its achievement.</small></p><div id="petl" class="grid"></div></div>
+      <div class="panel"><h2>Tabards</h2><div id="tabl" class="grid"></div></div>
+      <div class="panel"><h2>Appearances</h2><p><small>Cosmetic looks any class can show. Each is unlocked by an achievement, so ticking one grants that achievement.</small></p><div id="cosl" class="grid"></div></div>
+      
+    </section>
+
+    <section id="tab-codex" class="hide">
+      <div class="panel"><div class="row"><button id="cxAll">Unlock whole codex</button><button id="cxNone">Clear codex</button></div>
+        <p style="margin-top:10px"><small>Each entry counts as seen at its own rarity. Legendary amulets are one per class spell.</small></p></div>
+      <div class="panel"><h2>Rings &amp; trinkets</h2><div id="cxJ" class="grid"></div></div>
+      <div class="panel"><h2>Amulets</h2><div id="cxA" class="grid"></div></div>
+      <div class="panel"><h2>Legendary amulets</h2><div id="cxL"></div></div>
+    </section>
+
+    <section id="tab-raw" class="hide">
+      <div class="panel">
+        <h2>Raw text</h2>
+        <p>This is the whole save as plain text, one record per line (<code>items</code>, <code>equip</code>, <code>talent</code>, <code>seen</code>, <code>ach</code> and so on). Edit anything, then press <strong>Apply</strong>. The fields on the other tabs update to match.</p>
+        <textarea id="raw" spellcheck="false" aria-label="Raw save text"></textarea>
+        <div class="row" style="margin-top:10px"><button id="applyRaw">Apply raw text</button><span id="rawMsg"></span></div>
+      </div>
+    </section>
+
+    <div class="bar row">
+      <button id="save" class="primary">Download edited save</button>
+      <button id="reload">Open a different file</button>
+      <small id="hint"></small>
+    </div>
+    <div class="panel" style="margin-top:14px">
+      <h2>How to use the edited file</h2>
+      <p>1. In the game open <strong>Options → Saves</strong> and note the folder it shows. 2. Put the downloaded <code>.sav</code> file in that folder. 3. Pick it in the list and press <strong>Import</strong>. The game keeps a copy of your old progress as <code>characters.before-import</code>.</p>
+      <p><small>Importing replaces all progress with the file’s contents. Keep your original export as a backup.</small></p>
+    </div>
+  </div>
+</main>
+
+<script>
+/* ---------- crypto: SHA-1 + HMAC-SHA1 (pure JS, no dependencies) ---------- */
+function sha1(msg){
+  const ml=msg.length, total=((ml+9+63)>>6)<<6, buf=new Uint8Array(total);
+  buf.set(msg); buf[ml]=0x80;
+  const dv=new DataView(buf.buffer);
+  dv.setUint32(total-8, Math.floor(ml/0x20000000)); dv.setUint32(total-4,(ml<<3)>>>0);
+  let h0=0x67452301,h1=0xEFCDAB89,h2=0x98BADCFE,h3=0x10325476,h4=0xC3D2E1F0;
+  const w=new Uint32Array(80);
+  for(let o=0;o<total;o+=64){
+    for(let i=0;i<16;i++) w[i]=dv.getUint32(o+i*4);
+    for(let i=16;i<80;i++){const x=w[i-3]^w[i-8]^w[i-14]^w[i-16]; w[i]=((x<<1)|(x>>>31))>>>0;}
+    let a=h0,b=h1,c=h2,d=h3,e=h4;
+    for(let i=0;i<80;i++){
+      let f,k;
+      if(i<20){f=(b&c)|(~b&d);k=0x5A827999}
+      else if(i<40){f=b^c^d;k=0x6ED9EBA1}
+      else if(i<60){f=(b&c)|(b&d)|(c&d);k=0x8F1BBCDC}
+      else{f=b^c^d;k=0xCA62C1D6}
+      const t=((((a<<5)|(a>>>27))+f+e+k+w[i])>>>0);
+      e=d;d=c;c=((b<<30)|(b>>>2))>>>0;b=a;a=t;
+    }
+    h0=(h0+a)>>>0;h1=(h1+b)>>>0;h2=(h2+c)>>>0;h3=(h3+d)>>>0;h4=(h4+e)>>>0;
+  }
+  const out=new Uint8Array(20), ov=new DataView(out.buffer);
+  [h0,h1,h2,h3,h4].forEach((v,i)=>ov.setUint32(i*4,v));
+  return out;
+}
+function cat(...p){let n=0;p.forEach(x=>n+=x.length);const o=new Uint8Array(n);let i=0;p.forEach(x=>{o.set(x,i);i+=x.length});return o}
+const KEY=cat(new TextEncoder().encode("azeroth-survivors/save/v1/"),
+  Uint8Array.from("9c4e27d16af013b85de2710ca936c48f".match(/../g).map(h=>parseInt(h,16))));
+function hmacSha1(key,msg){
+  const k=new Uint8Array(64); k.set(key);
+  const ip=k.map(b=>b^0x36), op=k.map(b=>b^0x5c);
+  return sha1(cat(op,sha1(cat(ip,msg))));
+}
+const ENC=new TextEncoder(), DEC=new TextDecoder('utf-8',{fatal:true});
+function le64(i){const o=new Uint8Array(8);new DataView(o.buffer).setUint32(0,i>>>0,true);new DataView(o.buffer).setUint32(4,Math.floor(i/4294967296),true);return o}
+function keystream(header,n){
+  const out=new Uint8Array(Math.ceil(n/20)*20+20);
+  for(let i=0,p=0;p<n;i++,p+=20) out.set(hmacSha1(KEY,cat(ENC.encode("ks"),header,le64(i))),p);
+  return out.subarray(0,n);
+}
+function b64dec(s){const bin=atob(s.replace(/\s+/g,''));const o=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)o[i]=bin.charCodeAt(i);return o}
+function b64enc(u){let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s)}
+function unseal(text){
+  text=text.trim();
+  if(!text.startsWith("RSE1:")) throw new Error("This is not a sealed Azeroth Survivors save (it should start with RSE1:).");
+  const raw=b64dec(text.slice(5));
+  if(raw.length<36) throw new Error("The file is too short to be a save.");
+  const header=raw.subarray(0,16), ct=raw.subarray(16,raw.length-20), tag=raw.subarray(raw.length-20);
+  const want=hmacSha1(KEY,cat(ENC.encode("tag"),header,ct));
+  let ok=true; for(let i=0;i<20;i++) if(want[i]!==tag[i]) ok=false;
+  const ks=keystream(header,ct.length), pt=new Uint8Array(ct.length);
+  for(let i=0;i<ct.length;i++) pt[i]=ct[i]^ks[i];
+  return {text:DEC.decode(pt), ok};
+}
+function seal(plain,header){
+  header=header||crypto.getRandomValues(new Uint8Array(16));
+  const pt=ENC.encode(plain), ks=keystream(header,pt.length), ct=new Uint8Array(pt.length);
+  for(let i=0;i<pt.length;i++) ct[i]=pt[i]^ks[i];
+  const tag=hmacSha1(KEY,cat(ENC.encode("tag"),header,ct));
+  return "RSE1:"+b64enc(cat(header,ct,tag));
+}
+
+/* ---------- save model ---------- */
+const ZONES=["elwynn","duskwood","wsg","ungoro","ab","feralas","arena","sm","av","brm","aq","naxx"]; // order taken from the game (new version)
+const ZONE_NAMES={elwynn:"Elwynn Forest",duskwood:"Duskwood",wsg:"Warsong Gulch",ab:"Arathi Basin",feralas:"Feralas",arena:"Arena",av:"Alterac Valley",brm:"Blackrock Mountain",aq:"Ahn'Qiraj",ungoro:"Un'Goro Crater",sm:"Scarlet Monastery",naxx:"Naxxramas"};
+const CLASS_NAMES={1:"Warrior",2:"Paladin",3:"Hunter",4:"Rogue",5:"Priest",6:"Death Knight",7:"Shaman",8:"Mage",9:"Warlock",11:"Druid"};
+const KNOWN_KEYS=["pick","spec","open","unlock","items","equip","look","talent","seen","ach","achat","stat","beat","perk","tabard","pets","resets","hero","races","marks","pity","glow","hbeat","stars"];
+const STAT_LABELS={kills:"Kills",gold:"Gold",guardians:"Guardians slain",bosses:"Bosses slain",runs:"Runs",wins:"Wins",caches:"Caches opened",marks:"Marks earned"};
+
+let L=[];            // the save, one string per line
+let fileName="";
+
+const $=id=>document.getElementById(id);
+const key=l=>l.split('|')[0];
+const find=(k,cls)=>L.findIndex(l=>{const p=l.split('|');return p[0]===k&&(cls===undefined||p[1]===String(cls))});
+function kvParse(s){return s===""?[]:s.split(',').map(x=>{const i=x.search(/[=:]/);return [x.slice(0,i),x.slice(i+1),x[i]]})}
+function setLine(k,cls,rest){ // rest = text after "k|cls|" (or after "k|" if cls undefined)
+  const line=cls===undefined?`${k}|${rest}`:`${k}|${cls}|${rest}`;
+  const i=find(k,cls);
+  if(i>=0) L[i]=line; else { const end=L.length&&L[L.length-1]===""?L.length-1:L.length; L.splice(end,0,line); }
+}
+function removeLine(k,cls){const i=find(k,cls);if(i>=0)L.splice(i,1)}
+const GLOWS=[[0,"None"],[1894,"Icy Chill"],[1900,"Crusader"],[803,"Fiery Weapon"],[1899,"Unholy Weapon"]];
+function openRaces(){const i=find("races");return new Set(i<0?[]:(L[i].split("|")[1]||"").split(",").filter(Boolean).map(Number))}
+function racesFor(c){const b=CLASS_RACES[c]||[1];return Object.keys(RACES).map(Number).filter(r=>b.includes(r)||openRaces().has(r))}
+function hbMap(c){const i=find("hbeat",c),m={};if(i>=0)(L[i].split("|")[2]||"").split(",").filter(Boolean).forEach(x=>{const [z,v]=x.split(":");m[z]=+v});return m}
+function putHb(c,m){const s=ZONES.filter(z=>m[z]>0).map(z=>z+":"+m[z]).join(",");if(s)setLine("hbeat",c,s);else removeLine("hbeat",c)}
+function renderHeroic(){
+  $("heroic").innerHTML=classIds().map(c=>{const m=hbMap(c);
+    return `<div class="cls"><div class="nm"><div class="who">${clsIco(c)}<span>${CLASS_NAMES[c]}</span></div><div class="meta"><button class="small" data-hall="${c}">All V</button> <button class="small" data-hnone="${c}">None</button></div></div><div class="grid">${ZONES.map(z=>`<label>${ZONE_NAMES[z]}<select data-hc="${c}" data-hz="${z}">${[0,1,2,3,4,5].map(v=>`<option value="${v}"${(m[z]||0)===v?" selected":""}>${v?"Heroic "+["","I","II","III","IV","V"][v]:"Not beaten"}</option>`).join("")}</select></label>`).join("")}</div></div>`}).join("");
+  $("heroic").querySelectorAll("select").forEach(s=>s.addEventListener("change",()=>{const c=s.dataset.hc,z=s.dataset.hz,v=+s.value,m=hbMap(c);m[z]=v;putHb(c,m);
+    if(v>0){const cs=clearedSet(c);if(!cs.has(z)){cs.add(z);setBeat(c,cs)}}render()}));
+  $("heroic").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{const all=!!b.dataset.hall,c=b.dataset.hall||b.dataset.hnone;
+    if(all){setBeat(c,new Set(ZONES));const m={};ZONES.forEach(z=>m[z]=5);putHb(c,m)}else putHb(c,{});render()}));
+}
+function renderRaces(){
+  const o=openRaces();$("racelist").innerHTML=Object.keys(RACES).map(r=>`<label><input type="checkbox" data-r="${r}"${o.has(+r)?" checked":""}> ${RACES[r]}</label>`).join("");
+  $("racelist").querySelectorAll("input").forEach(cb=>cb.addEventListener("change",()=>{const s=openRaces();cb.checked?s.add(+cb.dataset.r):s.delete(+cb.dataset.r);
+    const v=[...s].sort((a,b)=>a-b).join(",");if(v)setLine("races",undefined,v);else removeLine("races");render()}));
+}
+const RACES={1:"Human",2:"Orc",3:"Dwarf",4:"Night Elf",5:"Undead",6:"Tauren",7:"Gnome",8:"Troll"};
+const CLASS_RACES={1:[1,2,3,4,5,6,7,8],2:[1,3],3:[2,3,4,6,8],4:[1,2,3,4,5,7,8],5:[1,3,4,5,8],7:[2,6,8],8:[1,5,7,8],9:[1,2,5,7],11:[4,6]};
+function ensureHero(c){
+  if(find("hero",c)<0) setLine("hero",c,CLASS_RACES[c][0]+"|0|0,0,0,0,0");
+  if(find("unlock",c)<0&&find("open",c)<0) setOpen(c,-1);
+}
+function classIds(){return CLS_ORDER.slice()}
+function classIdsOld(){
+  const s=new Set();
+  L.forEach(l=>{const p=l.split('|'); if(["hero","unlock","beat","talent","equip"].includes(p[0])&&/^\d+$/.test(p[1]||""))s.add(+p[1])});
+  return [...s].sort((a,b)=>a-b);
+}
+function clearedSet(cls){const i=find("beat",cls);return new Set(i<0?[]:(L[i].split('|')[2]||"").split(',').filter(Boolean))}
+const newFmt=()=>L.some(l=>l.startsWith("open|"))||!L.some(l=>l.startsWith("unlock|"));
+function setOpen(cls,hi){
+  if(newFmt()){removeLine("unlock",cls);setLine("open",cls,ZONES[Math.min(ZONES.length-1,hi+1)])}
+  else setLine("unlock",cls,String(Math.min(ZONES.length,hi+2)));
+}
+function setBeat(cls,set){
+  ensureHero(cls);
+  const known=ZONES.filter(z=>set.has(z)), all=known.concat([...set].filter(z=>!ZONES.includes(z)));
+  if(all.length) setLine("beat",cls,all.join(',')); else removeLine("beat",cls);
+  const hi=Math.max(-1,...known.map(z=>ZONES.indexOf(z)));
+  setOpen(cls,hi);
+}
+function setCleared(cls,n){setBeat(cls,new Set(ZONES.slice(0,n)))}
+
+/* ---------- UI ---------- */
+function status(kind,msg){$("status").innerHTML=`<div class="status ${kind}">${msg}</div>`}
+function syncRaw(){ $("raw").value=L.join('\n') }
+function render(){
+  syncRaw();
+  // totals
+  const si=find("stat"); const stats=si>=0?kvParse(L[si].split('|')[1]||""):[];
+  $("stats").innerHTML=stats.map(([k,v])=>`<label class="f">${STAT_LABELS[k]||k}<input type="number" min="0" data-stat="${k}" value="${v}"></label>`).join('')||"<p>No totals found in this save.</p>";
+  $("stats").querySelectorAll("input").forEach(inp=>inp.addEventListener("change",()=>{
+    const cur=kvParse(L[find("stat")].split('|')[1]||"");
+    const m=cur.map(([k,v,sep])=>`${k}=${k===inp.dataset.stat?String(Math.max(0,Math.floor(+inp.value||0))):v}`).join(',');
+    setLine("stat",undefined,m); syncRaw();
+  }));
+  // classes
+  $("classes").innerHTML=classIds().map(c=>{
+    const s=clearedSet(c);
+    return `<div class="cls"><div class="nm"><div class="who">${clsIco(c)}<span>${CLASS_NAMES[c]||("Class "+c)}</span></div><div class="meta"><button class="small" data-all="${c}">All</button> <button class="small" data-none="${c}">None</button></div></div>
+      <div class="grid">${ZONES.map(z=>`<label><input type="checkbox" data-cls="${c}" data-z="${z}"${s.has(z)?" checked":""}> ${ZONE_NAMES[z]||z}</label>`).join("")}</div></div>`}).join('');
+  $("classes").querySelectorAll("input").forEach(cb=>cb.addEventListener("change",()=>{
+    const s=clearedSet(cb.dataset.cls); cb.checked?s.add(cb.dataset.z):s.delete(cb.dataset.z); setBeat(cb.dataset.cls,s); syncRaw();}));
+  $("classes").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+    const c=b.dataset.all||b.dataset.none; setBeat(c,new Set(b.dataset.all?ZONES:[])); render();}));
+  // perks
+  const pi=find("perk"); const perks=pi>=0?kvParse(L[pi].split('|')[1]||""):[];
+  $("perks").innerHTML=perks.map(([k,v])=>`<div class="perk">${ico((IC.p[k]||[])[0])}<div class="pn">${(IC.p[k]||[])[1]||k.replace(/_/g,' ')}<small>max ${PERKMAX[k]||"?"}</small></div><input type="number" min="0" max="${PERKMAX[k]||9}" data-perk="${k}" value="${v}"></div>`).join('')||"<p>No perks in this save.</p>";
+  $("perks").querySelectorAll("input").forEach(inp=>inp.addEventListener("change",()=>{
+    const cur=kvParse(L[find("perk")].split('|')[1]||"");
+    const m=cur.map(([k,v])=>`${k}:${k===inp.dataset.perk?String(Math.max(0,Math.floor(+inp.value||0))):v}`).join(',');
+    setLine("perk",undefined,m); syncRaw();
+  }));
+  renderHeroic(); renderRaces(); renderHeroes(); renderGear(); renderAch(); renderColl(); renderCodex();
+  // collection
+  const get=k=>{const i=find(k);return i>=0?(L[i].split('|')[1]||""):""};
+}
+function zoneText(n){return n===0?"No zones cleared":n===ZONES.length?"All zones cleared":`Cleared through ${ZONE_NAMES[ZONES[n-1]]}; next: ${ZONE_NAMES[ZONES[n]]}`}
+
+function openText(text,name){
+  try{
+    const r=unseal(text); fileName=name;
+    L=r.text.split('\n');
+    L=L.map(l=>/^(ach|achat)\|/.test(l)?l.replace(/\bfeat:unp\b(?!olished)/g,'feat:unpolished'):l); // the game renamed this id in the latest version
+    $("loader").classList.add("hide"); $("editor").classList.remove("hide");
+    if(r.ok) status("ok",`Opened <strong>${escapeHtml(name)}</strong>. The seal checked out, so this is an unmodified game save.`);
+    else status("warn",`Opened <strong>${escapeHtml(name)}</strong>, but its seal did not match, so it was edited or damaged. The game would reject this file as it is. Saving here writes a fresh, valid seal.`);
+    render();
+  }catch(e){ alert("Could not open this file.\n\n"+e.message) }
+}
+const escapeHtml=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function validate(){
+  const problems=[];
+  L.forEach((l,i)=>{ if(l==="") return;
+    const k=key(l); if(!KNOWN_KEYS.includes(k)) problems.push(`Line ${i+1} starts with “${k}”, which this game does not use.`);
+    if(l.includes('\r')) problems.push(`Line ${i+1} contains a stray carriage return.`);
+  });
+  return problems;
+}
+function download(){
+  const probs=validate();
+  if(probs.length && !confirm("Some lines look wrong:\n\n"+probs.slice(0,8).join("\n")+"\n\nSave anyway?")) return;
+  const text=L.join('\n');
+  const blob=new Blob([seal(text)],{type:"text/plain"});
+  const d=new Date(), p=n=>String(n).padStart(2,'0');
+  const name=`AzerothSurvivors_edited_${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}-${p(d.getSeconds())}.sav`;
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove();
+  $("hint").textContent=`Saved as ${name}`;
+}
+
+
+/* ---------- data read from the game files ---------- */
+const CLS_ORDER=[1,2,3,4,5,7,8,9,11];
+const TREES="imp_heroic:5:0:0,deflection:5:0:1,imp_rend:3:1:0,tactical_mastery:5:1:2,deep_wounds:1:2:1,anger_management:3:2:2,impale:3:3:0,two_hand_spec:5:3:2,sweeping_strikes:1:4:1,imp_execute:3:4:2,sword_spec:5:5:0,weapon_mastery:3:5:2,mortal_wounds:1:6:1|cruelty:5:0:1,booming_voice:5:0:2,unbridled_wrath:5:1:0,imp_battle_shout:3:1:2,rampage:1:2:1,imp_cleave:3:2:2,dual_wield_spec:5:3:0,imp_whirlwind:3:3:2,flurry:1:4:1,death_wish:3:4:2,blood_craze:3:5:0,imp_berserker:5:5:2,bladestorm:1:6:1|shield_spec:5:0:0,anticipation:5:0:2,imp_thunder_clap:3:1:0,toughness:5:1:2,heavy_shield:3:2:0,shockwave:1:2:1,imp_demo_shout:3:2:2,defiance:3:3:0,imp_shield_slam:3:3:2,shield_mastery:3:4:0,fortified:1:4:1,last_stand:1:5:0,unbreakable:3:5:2,titan:1:6:1|divine_strength:5:0:1,divine_intellect:5:0:2,healing_light:3:1:0,imp_seal:5:1:2,divine_favor:1:2:1,unyielding_faith:3:2:2,holy_power:5:3:0,lasting_judgement:3:3:2,daybreak:1:4:1,sanctified_light:5:4:2,holy_guidance:3:5:0,purifying_power:3:5:2,lights_grace:1:6:1|imp_devotion:5:0:0,redoubt:5:0:2,imp_consecration:3:1:0,spiritual_attunement:3:1:2,weighted_hammer:3:2:0,hallowed_ground:1:2:1,judgement_crusader:3:2:2,righteous_fury:3:3:0,imp_hoj:3:3:2,blessed_life:3:4:0,ardent_defender:1:4:1,divine_intervention:1:5:0,sacred_duty:3:5:2,hammer_righteous:1:6:1|imp_might:5:0:1,benediction:5:0:2,imp_judgement:3:1:0,deflection_pal:5:1:2,seal_of_command:1:2:1,pursuit:2:2:2,conviction:5:3:0,righteous_hammer:3:3:2,art_of_war:1:4:1,sanctity_aura:3:4:2,eye_for_an_eye:3:5:0,vindication:3:5:2,divine_storm:1:6:1|imp_hawk:5:0:1,endurance_training:5:0:2,imp_monkey:5:1:0,pathfinding:2:1:2,tame_beast:1:2:1,unleashed_fury:5:2:2,ferocity_hunter:5:3:0,spirit_bond:2:3:2,frenzy_hunter:1:4:1,bestial_discipline:3:4:2,intimidation:3:5:0,ferocious_inspiration:3:5:2,bestial_wrath:1:6:1|lethal_shots:5:0:1,efficiency:5:0:2,imp_arcane_shot:5:1:0,imp_serpent_sting:5:1:2,piercing_shots:1:2:1,mortal_shots:5:2:2,ranged_spec:5:3:0,imp_multi_shot:2:3:2,rapid_fire:1:4:1,barrage:3:4:2,hawk_eye:3:5:0,scatter_shot:3:5:2,kill_shot:1:6:1|monster_slaying:5:0:1,deflection_hunter:5:0:2,clever_traps:3:1:0,survivalist:5:1:2,entrapment:1:2:1,savage_strikes:3:2:2,trap_mastery:3:3:0,surefooted:3:3:2,explosive_ammo:1:4:1,killer_instinct:3:4:2,lightning_reflexes:5:5:0,counterattack:2:5:2,wyvern_sting:1:6:1|imp_eviscerate:5:0:1,malice:5:0:2,ruthlessness:3:1:0,murder:5:1:2,deadly_poison:1:2:1,lethality:5:2:2,imp_poisons:5:3:0,vile_poisons:5:3:2,mutilate:1:4:1,seal_fate:3:4:2,vigor:3:5:0,remorseless:3:5:2,toxic_bloom:1:6:1|precision_rogue:5:0:1,lightning_reflexes_rogue:5:0:2,imp_sinister:3:1:0,endurance_rogue:5:1:2,blade_flurry_talent:1:2:1,dual_wield_rogue:5:2:2,sword_spec_rogue:5:3:0,weapon_expertise:3:3:2,adrenaline:1:4:1,aggression:3:4:2,imp_slice_dice:3:5:0,riposte:2:5:2,killing_spree:1:6:1|master_deception:5:0:1,opportunity:5:0:2,elusiveness:3:1:0,initiative:5:1:2,cheat_death:1:2:1,imp_ambush:3:2:2,serrated_blades:3:3:0,setup:3:3:2,preparation:1:4:1,dirty_deeds:3:4:2,deadliness:5:5:0,heightened_senses:2:5:2,shadow_dance:1:6:1|unbreakable_will:5:0:1,wand_spec:5:0:2,imp_pw_shield:3:1:0,martyrdom:5:1:2,divine_aegis:1:2:1,mental_agility:5:2:2,meditation:3:3:0,mental_strength:5:3:2,rapture:1:4:1,force_of_will:5:4:2,silent_resolve:3:5:0,imp_inner_fire:3:5:2,penance:1:6:1|holy_spec:5:0:1,imp_renew:5:0:2,divine_fury:5:1:0,holy_reach:3:1:2,holy_nova_talent:1:2:1,inspiration:3:2:2,searing_light:3:3:0,spiritual_guidance:5:3:2,holy_fire_talent:1:4:1,spiritual_healing:3:4:2,blessed_recovery:3:5:0,holy_concentration:3:5:2,chastise:1:6:1|spirit_tap:5:0:1,blackout:5:0:2,imp_swp:2:1:0,shadow_focus:5:1:2,shadow_weaving:1:2:1,imp_mind_blast:5:2:2,darkness:5:3:0,imp_psychic_scream:2:3:2,shadowy_apparitions:1:4:1,shadow_reach:3:4:2,shadow_power:3:5:0,imp_vampiric:3:5:2,shadowform:1:6:1|convection:5:0:1,concussion:5:0:2,earths_grasp:3:1:0,call_of_flame:3:1:2,lightning_overload:1:2:1,reverberation:5:2:2,call_of_thunder:5:3:0,imp_fire_totems:2:3:2,elemental_fury:1:4:1,lightning_mastery:5:4:2,storm_reach:2:5:0,elemental_devastation:3:5:2,elemental_mastery:1:6:1|enh_thundering_strikes:5:0:1,enh_earthen_bulwark:5:0:2,enh_resonant_shocks:3:1:0,enh_shattering_elements:3:1:2,rockbiter_initiation:1:2:1,enh_windfury_weapon:3:2:2,enh_flametongue_weapon:3:3:0,enh_frostbrand_weapon:3:3:2,enh_unleashed_weapons:1:4:1,enh_ancestral_fortitude:3:4:2,enh_flurry:3:5:0,enh_sweeping_storm:3:5:2,enh_stormbound_echoes:1:6:1|imp_healing_wave:5:0:1,tidal_focus:5:0:2,totemic_focus:5:1:0,natures_guidance:3:1:2,twin_totems:1:2:1,restorative_totems:3:2:2,tidal_mastery:5:3:0,healing_way:3:3:2,reincarnation:1:4:1,purification:5:4:2,totemic_mastery:3:5:0,ancestral_healing:3:5:2,totemic_call:1:6:1|arcane_focus:5:0:1,arcane_subtlety:5:0:2,imp_arcane_explosion:3:1:0,magic_absorption:5:1:2,arcane_concentration:1:2:1,arcane_meditation:3:2:2,arcane_mind:5:3:0,imp_blink:3:3:2,presence_of_mind:1:4:1,arcane_instability:3:4:2,arcane_fortitude:3:5:0,arcane_reach:3:5:2,arcane_power:1:6:1|imp_fireball:5:0:1,impact:5:0:2,flame_throwing:2:1:0,imp_flamestrike:5:1:2,ignite:1:2:1,incinerate:3:2:2,master_elements:3:3:0,critical_mass:3:3:2,hot_streak:1:4:1,fire_power:5:4:2,burning_soul:3:5:0,imp_blast_wave:3:5:2,pyroclasm:1:6:1|frost_warding:5:0:1,imp_frostbolt:5:0:2,elemental_precision:3:1:0,ice_shards:5:1:2,frostbite:1:2:1,piercing_ice:3:2:2,shatter:5:3:0,arctic_reach:2:3:2,splitting_ice:1:4:1,frost_channeling:3:4:2,permafrost:3:5:0,imp_ice_barrier:3:5:2,water_elemental:1:6:1|suppression:5:0:1,imp_corruption:5:0:2,imp_coa:3:1:0,imp_drain_life:5:1:2,nightfall:1:2:1,dark_pact:3:2:2,grim_reach:1:3:0,shadow_mastery:5:3:2,contagion:1:4:1,amplify_curse:3:4:2,siphon_life:1:5:0,fel_concentration:3:5:2,seed_of_corruption:1:6:1|demonic_familiar:5:0:1,demonic_embrace:5:0:2,fel_stamina:3:1:0,unholy_power:5:1:3,soul_devourer:3:2:0,soul_link:3:2:2,felfire_training:3:2:3,master_demonologist:3:3:3,legion_gate:1:4:1,demonic_supremacy:1:4:3,summon_infernal:3:5:0,summon_doomguard:3:5:3,pact_of_the_annihilan:1:6:0,butcher:1:6:2|imp_shadow_bolt:5:0:1,cataclysm:5:0:2,intensity:5:1:0,aftermath:5:1:2,shadowburn:1:2:1,imp_searing_pain:3:2:2,destructive_reach:3:3:0,devastation:5:3:2,conflagrate:1:4:1,emberstorm:5:4:2,ruin:3:5:0,bane:3:5:2,rain_of_chaos:1:6:1|imp_wrath:5:0:1,natures_grasp:3:0:2,imp_moonfire:5:1:0,natural_weapons:5:1:2,omen_of_clarity:1:2:1,vengeance_druid:5:2:2,imp_starfire:3:3:0,moonglow:3:3:2,starfall:1:4:1,imp_hurricane:3:4:2,moonfury:5:5:0,natures_reach:2:5:2,force_of_nature:1:6:1|ferocity_druid:5:0:1,feral_aggression:5:0:2,feral_instinct:3:1:0,brutal_impact:5:1:2,rake:1:2:1,sharpened_claws:3:2:2,predatory_strikes:3:3:0,thick_hide:3:3:2,blood_frenzy:1:4:1,savage_fury:3:4:2,heart_of_wild:5:5:0,primal_fury:2:5:2,leader_of_pack:1:6:0,cat_form:1:6:2|imp_motw:5:0:1,furor:5:0:2,imp_healing_touch:5:1:0,natures_focus:5:1:2,swiftmend:1:2:1,reflection:3:2:2,tranquil_spirit:5:3:0,imp_rejuvenation:3:3:2,tranquility:1:4:1,gift_of_nature:5:4:2,imp_tranquility:3:5:0,natural_shapeshifter:3:5:2,tree_of_life:1:6:1".split("|").map(t=>t.split(",").map(x=>{const [i,m,r,c]=x.split(":");return [i,+m,+r,+c]}));
+const PERKMAX={rerolls:3,banish:3,skip:1,opening:1,veteran:2,keen:2,companion:1,leash:3,paws:3,instinct_gold:1,instinct_wisps:1,instinct_runes:1,second:1};
+const PETS={squirrel:"Squirrel",rabbit:"Snowshoe Rabbit",macaw:"Crimson Macaw",owl:"Great Horned Owl",frog:"Tree Frog",kingsnake:"Black Kingsnake",darter:"Sprite Darter",whelp:"Black Whelpling",zergling:"Zergling",chicken:"Westfall Chicken",roach:"Undercity Cockroach",panda:"Panda Cub",zulian_tiger:"Swift Zulian Tiger",drakonid:"Mini Chromatic Drakonid",eye_of_cthun:"Mini Eye of C'Thun",stitches:"Mini Stitches",doomguard:"Mini Doomguard",devilsaur:"Baby Devilsaur",ogre:"Mini Ogre",gordok:"Tiny Gordok",azure_whelp:"Azure Whelpling",sapphiron:"Sapphiron",ancient_protector:"Ancient Protector",herod:"Mini Herod",nefarian:"Mini Nefarian",bigglesworth:"Mr. Bigglesworth"};
+const TABARDS={90001:"Warsong Battle",90002:"Silverwing Battle",90003:"Arathor Battle",90004:"Defilers Battle",90005:"Stormpike Battle",90006:"Frostwolf Battle",90011:"Stormwind",90012:"Lordaeron",90013:"Stromgarde",90014:"Theramore",90015:"Dalaran",90016:"Scarlet Crusade",90017:"Darkmoon Faire",90018:"Alliance",90019:"Horde",90020:"Argent Dawn",90021:"Flame",90022:"Frost",90023:"Alliance Officer's",90024:"Horde Officer's",90025:"Contest Winner's"};
+const ACH_IDS=[...["warrior","paladin","hunter","rogue","priest","shaman","mage","warlock","druid"].flatMap(c=>["class:"+c,"classlast:"+c]),
+  ...ZONES.flatMap(z=>["zone:"+z,"zone9:"+z]),
+  ...["bosses100","caches100","gold50k","gold5k","guardians100","guardians500","kills100k","kills10k","kills1m","runs10","runs100","wins50"].map(x=>"count:"+x),
+  ...["bare","endless25","endless30","endless40","kills2500","kills6000","lairs","odds","thrifty"].map(x=>"feat:"+x),"legendaryset","feat:nou",...["codex:10","codex:50","codex:100","pieces:25","pieces:100","pieces:250","pieces:all","talents:1","talents:9"]];
+const SLOT_IDS=[0,2,4,5,6,7,8,9,15];
+const WEAPON_SLOT=c=>c===3?17:15; // Hunter's bow uses the ranged slot
+const OFFHAND=[4,7];
+function pvpSlots(c){ // all slot positions that exist at the PvP tier (tier 5), confirmed in game
+  const s=[0,1,2,3,4,5,6,7,8]; if(+c===4||+c===7) s.push(9); // Rogue and Shaman also have an off-hand
+  return s}
+let hcls=null;
+const pretty=id=>id.replace(/^imp_/,"improved_").replace(/_/g," ");
+const gearId=(c,s,t)=>100000+c*1000+s*100+t*10;
+function tl(cls){const i=find("talent",cls);if(i<0)return{xp:"0",r:{}};const p=L[i].split("|");const r={};(p[3]||"").split(",").filter(Boolean).forEach(x=>{const [k,v]=x.split(":");r[k]=+v});return{xp:p[2]||"0",r}}
+const EXCL={soul_devourer:"soul_link",soul_link:"soul_devourer",pact_of_the_annihilan:"butcher",butcher:"pact_of_the_annihilan"}; // picking one rules out the other
+function syncSpec(cls,ranks){ // the game keeps the active talent spec in a "spec" record; keep it in step with the talents
+  const i=find("spec",cls); if(i<0)return; const p=L[i].split("|"), a=+p[2]; if(!(a>=0)||3+a>=p.length)return;
+  p[3+a]=ranks; L[i]=p.join("|");
+}
+function putTl(cls,xp,r){const order=TREES.flat().map(t=>t[0]);const s=order.filter(k=>r[k]>0).map(k=>k+":"+r[k]).join(",");syncSpec(cls,s);if(!s&&+xp===0){removeLine("talent",cls);return}ensureHero(cls);setLine("talent",cls,xp+"|"+s)}
+let hspec={};
+function parseRanks(s){const r={};(s||"").split(",").filter(Boolean).forEach(x=>{const [k,v]=x.split(":");r[k]=+v});return r}
+function ranksStr(r){return TREES.flat().map(t=>t[0]).filter(k=>r[k]>0).map(k=>k+":"+r[k]).join(",")}
+function specInfo(cls){const i=find("spec",cls);if(i<0)return null;const p=L[i].split("|"),n=p.length-3,a=+p[2];let s=hspec[cls];if(s==null||s<0||s>=n)s=(a>=0&&a<n)?a:0;return{i,p,n,a,s}}
+function getRanks(cls){const sp=specInfo(cls);return(!sp||sp.s===sp.a)?tl(cls).r:parseRanks(sp.p[3+sp.s])}
+function setRanks(cls,r){const sp=specInfo(cls);if(!sp||sp.s===sp.a){putTl(cls,tl(cls).xp,r);return}sp.p[3+sp.s]=ranksStr(r);L[sp.i]=sp.p.join("|")}
+function treesOf(cls){const i=CLS_ORDER.indexOf(+cls);return i<0?[]:TREES.slice(i*3,i*3+3)}
+function renderHeroes(){
+  const ids=classIds(); if(!ids.length)return;
+  const sel=$("hc"); if(hcls===null||!ids.includes(hcls)) hcls=ids[0];
+  sel.innerHTML=ids.map(c=>`<option value="${c}"${c===hcls?" selected":""}>${CLASS_NAMES[c]||c}</option>`).join("");
+  $("clsbar").innerHTML=ids.map(c=>`<button class="clsbtn" data-c="${c}" aria-pressed="${c===hcls}">${clsIco(c)}<span>${CLASS_NAMES[c]}</span></button>`).join("");
+  $("clsbar").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{hcls=+b.dataset.c;renderHeroes();renderGear()}));
+  const t=tl(hcls); $("hxp").value=t.xp; const R=getRanks(hcls), sp=specInfo(hcls);
+  const hi=find("hero",hcls), hp=hi>=0?L[hi].split("|"):null, al=racesFor(hcls);
+  $("hrace").innerHTML=al.map(r=>`<option value="${r}"${hp&&+hp[2]===r?" selected":""}>${RACES[r]}</option>`).join("");
+  $("hgen").value=hp?hp[3]:"0";
+  {const mi=find("marks",hcls);$("hmarks").value=mi>=0?(L[mi].split("|")[2]||"0"):"0";
+   const gi=find("glow",hcls),gv=gi>=0?+(L[gi].split("|")[2]||0):0;
+   $("hglow").innerHTML=GLOWS.concat(GLOWS.some(g=>g[0]===gv)?[]:[[gv,"Glow "+gv]]).map(([v,n])=>`<option value="${v}"${v===gv?" selected":""}>${n}</option>`).join("")}
+  const TN={1:["Arms","Fury","Protection"],2:["Holy","Protection","Retribution"],3:["Beast Mastery","Marksmanship","Survival"],4:["Assassination","Combat","Subtlety"],5:["Discipline","Holy","Shadow"],7:["Elemental","Enhancement","Restoration"],8:["Arcane","Fire","Frost"],9:["Affliction","Demonology","Destruction"],11:["Balance","Feral Combat","Restoration"]}[hcls]||[];
+  let total=0;
+  $("trees").innerHTML=treesOf(hcls).map((tr,n)=>{const sp=tr.reduce((a,[k])=>a+(R[k]||0),0);total+=sp;
+    const rows=Math.max(...tr.map(x=>x[2]))+1;
+    return `<div class="tree"><h3>${TN[n]||"Tree "+(n+1)}<span>${sp} points</span></h3><div class="tgridg" style="grid-template-rows:repeat(${rows},60px)">`+tr.map(([k,m,r,c])=>{const v=R[k]||0,ex=EXCL[k]&&R[EXCL[k]]>0;const nm=(IC.t[k]||[])[1]||pretty(k);
+      return `<button class="tcell${v>0?" on":""}${v>=m?" max":""}${ex?" no":""}" style="grid-row:${r+1};grid-column:${c+1}" data-t="${k}" data-m="${m}" title="${nm} (${v}/${m})${EXCL[k]?" - excludes "+(IC.t[EXCL[k]]||[])[1]:""}">${ico((IC.t[k]||[])[0])}<span class="rk">${v}</span></button>`}).join("")+`</div></div>`}).join("")||"<p>No talent tree known for this class.</p>";
+  $("tpts").textContent=total+" points spent"+(sp?" in Spec "+(sp.s+1):"");
+  $("specbar").innerHTML=sp?Array.from({length:sp.n},(_,i)=>`<button class="chip" data-s="${i}" aria-pressed="${i===sp.s}">Spec ${i+1}${i===sp.a?" (active)":""}</button>`).join("")+`<span style="flex:1"></span><button class="small" id="spAct"${sp.s===sp.a?" disabled":""}>Make this the active spec</button><button class="small" id="spCopy"${sp.s===sp.a?" disabled":""}>Copy active spec here</button>`:"";
+  $("specbar").querySelectorAll(".chip").forEach(b=>b.addEventListener("click",()=>{hspec[hcls]=+b.dataset.s;renderHeroes()}));
+  if(sp){const act=$("spAct"),cp=$("spCopy");
+    act.onclick=()=>{const rk=getRanks(hcls),q=specInfo(hcls);q.p[2]=String(q.s);L[q.i]=q.p.join("|");putTl(hcls,tl(hcls).xp,rk);renderHeroes();syncRaw()};
+    cp.onclick=()=>{const q=specInfo(hcls);q.p[3+q.s]=ranksStr(tl(hcls).r);L[q.i]=q.p.join("|");renderHeroes();syncRaw()}}
+  $("trees").querySelectorAll(".tcell").forEach(b=>{
+    const set=(v)=>{const r=getRanks(hcls),k=b.dataset.t,m=+b.dataset.m;v=Math.max(0,Math.min(m,v));r[k]=v;if(v>0&&EXCL[k])r[EXCL[k]]=0;setRanks(hcls,r);renderHeroes();syncRaw()};
+    const val=()=>getRanks(hcls)[b.dataset.t]||0, m=+b.dataset.m;
+    b.addEventListener("click",e=>set(e.shiftKey?(val()>=m?0:m):val()+1));
+    b.addEventListener("contextmenu",e=>{e.preventDefault();set(val()-1)});
+  });
+}
+
+function gearAdd(classes){classes.forEach(ensureHero);
+  const i=find("items"); const have=new Set(i>=0?(L[i].split("|")[1]||"").split(",").filter(Boolean).map(Number):[]);
+  classes.forEach(c=>{for(let s=0;s<=(OFFHAND.includes(+c)?9:8);s++)for(let t=0;t<=4;t++)have.add(gearId(c,s,t));pvpSlots(c).forEach(s=>have.add(gearId(c,s,5)))});
+  setLine("items",undefined,[...have].sort((a,b)=>a-b).join(","));
+}
+function renderColl(){
+  const get=k=>{const i=find(k);return new Set(i>=0?(L[i].split("|")[1]||"").split(",").filter(Boolean):[])};
+  const mk=(el,map,key)=>{const have=get(key);$(el).innerHTML=Object.entries(map).map(([id,n])=>`<label class="tcheck">${ico(key==="pets"?IC.pet[id]:(IC.tab[id]||TAB_ICON))}<span>${n}</span><input type="checkbox" data-id="${id}"${have.has(String(id))?" checked":""}></label>`).join("");
+    $(el).querySelectorAll("input").forEach(cb=>cb.addEventListener("change",()=>{const s=get(key);cb.checked?s.add(cb.dataset.id):s.delete(cb.dataset.id);
+      const order=Object.keys(map).map(String);setLine(key,undefined,[...s].sort((a,b)=>(order.indexOf(a)+1||999)-(order.indexOf(b)+1||999)).join(","));{const AC=key==="pets"?PETACH:TABACH;if(cb.checked&&AC[cb.dataset.id]){const q=achSet();q.add(AC[cb.dataset.id]);putAch(q);renderAch();renderColl()}}syncRaw()}))};
+  mk("petl",PETS,"pets"); mk("tabl",TABARDS,"tabard");
+  const ah=achSet(),ti=a=>(ACHS.find(x=>x[0]===a)||[])[1]||a;
+  $("cosl").innerHTML=COSM.map(([id,n,ic,a])=>`<label class="tcheck">${ico(ic)}<span>${n}<small style="display:block">Achievement: ${ti(a)}</small></span><input type="checkbox" data-a="${a}"${ah.has(a)?" checked":""}></label>`).join("");
+  $("cosl").querySelectorAll("input").forEach(cb=>cb.addEventListener("change",()=>{const s=achSet();cb.checked?s.add(cb.dataset.a):s.delete(cb.dataset.a);putAch(s);renderAch();syncRaw()}));
+}
+$("hc").addEventListener("change",()=>{hcls=+$("hc").value;renderHeroes()});
+function putHero(){ensureHero(hcls);const p=L[find("hero",hcls)].split("|");setLine("hero",hcls,$("hrace").value+"|"+$("hgen").value+"|"+(p[4]||"0,0,0,0,0"));syncRaw()}
+$("hmarks").addEventListener("change",()=>{ensureHero(hcls);const v=Math.max(0,Math.floor(+$("hmarks").value||0));if(v)setLine("marks",hcls,String(v));else removeLine("marks",hcls);syncRaw()});
+$("hglow").addEventListener("change",()=>{const v=+$("hglow").value;if(v)setLine("glow",hcls,String(v));else removeLine("glow",hcls);syncRaw()});
+$("hAll").addEventListener("click",()=>{CLS_ORDER.forEach(c=>{setBeat(c,new Set(ZONES));const m={};ZONES.forEach(z=>m[z]=5);putHb(c,m)});render()});
+$("hNone").addEventListener("click",()=>{CLS_ORDER.forEach(c=>putHb(c,{}));render()});
+$("rAll").addEventListener("click",()=>{setLine("races",undefined,Object.keys(RACES).join(","));render()});
+$("hrace").addEventListener("change",putHero);$("hgen").addEventListener("change",putHero);
+$("hxp").addEventListener("change",()=>{const t=tl(hcls);putTl(hcls,String(Math.max(0,Math.floor(+$("hxp").value||0))),t.r);syncRaw()});
+const MAXXP=1000000000; // about 3.5x the biggest value in a real save; change here if you want a different cap
+$("xMax").addEventListener("click",()=>{putTl(hcls,String(MAXXP),tl(hcls).r);render()});
+$("xAll").addEventListener("click",()=>{CLS_ORDER.forEach(c=>putTl(c,String(MAXXP),tl(c).r));render()});
+$("tMax").addEventListener("click",()=>{const r={};treesOf(hcls).flat().forEach(([k,m])=>{if(!(EXCL[k]&&r[EXCL[k]]))r[k]=m});setRanks(hcls,r);render()});
+$("tClr").addEventListener("click",()=>{setRanks(hcls,{});render()});
+$("gCls").addEventListener("click",()=>{gearAdd([hcls]);render()});
+$("gNone").addEventListener("click",()=>{const o=ownedItems();[...o].forEach(i=>{if(Math.floor(i/1000)%100===+hcls)o.delete(i)});putItems(o);render()});
+$("sCls").addEventListener("click",()=>{maxStars([+hcls],5);render()});
+$("sAll").addEventListener("click",()=>{maxStars(CLS_ORDER,5);render()});
+$("sNone").addEventListener("click",()=>{const m=starMap();Object.keys(m).forEach(k=>{if(Math.floor(k/1000)%100===+hcls)delete m[k]});putStars(m);render()});
+$("gAll").addEventListener("click",()=>{gearAdd(CLS_ORDER);render()});
+$("gEq").addEventListener("click",()=>{gearAdd([hcls]);ensureHero(hcls);setLine("equip",hcls,SLOT_IDS.map((s,i)=>(s===15?WEAPON_SLOT(+hcls):s)+":"+gearId(hcls,i,4)).concat(OFFHAND.includes(+hcls)?["16:"+gearId(hcls,9,4)]:[]).join(","));render()});
+
+
+const CODEX={"J":{"accuria":"Band of Accuria","quick_strike":"Quick Strike Ring","dark_iron":"Heavy Dark Iron Ring","dragonslayer":"Master Dragonslayer's Ring","archimtiros":"Archimtiros' Ring of Reckoning","devoured":"Ring of the Devoured","spell_power":"Ring of Spell Power","seal_damned":"Seal of the Damned","blooddrinker":"Blooddrinker's Band","earthstrike":"Earthstrike","tep":"Talisman of Ephemeral Power","lifegiving":"Lifegiving Gem","hoj":"Hand of Justice","blackhand":"Blackhand's Breadth","carrot":"Carrot on a Stick","remote":"Gnomish Universal Remote","insignia":"Insignia of the Horde","eldre_thalas":"Royal Seal of Eldre'Thalas","chosen":"Mark of the Chosen","onyxia_blood":"Onyxia Blood Talisman","war_horn":"Horn of the Warchief","soulstone":"Major Soulstone","star_of_mystaria":"Star of Mystaria"},"A":{"mark_of_fordring":["Mark of Fordring",0],"talvash":["Talvash's Enhancing Necklace",0],"south_seas_kelp":["Pristine Enchanted South Seas Kelp",0],"prestor":["Prestor's Talisman of Connivery",1],"animated_chain":["Animated Chain Necklace",1],"woven_ivy":["Woven Ivy Necklace",1],"darkmoon":["Amulet of the Darkmoon",1],"jeklik":["Jeklik's Opaline Talisman",2],"eye_of_hakkar":["The Eye of Hakkar",2],"steadfast_might":["Medallion of Steadfast Might",2],"enlightenment":["Choker of Enlightenment",3],"vek_nilash":["Amulet of Vek'nilash",3],"fallen_dragon":["Pendant of the Fallen Dragon",3],"malice_stone":["Malice Stone Pendant",3],"onyxia_tooth":["Onyxia Tooth Pendant",4],"fire_lord":["Choker of the Fire Lord",4]},"L":{"1":["cleave","whirlwind","thunder_clap","mortal_strike","execute","demo_shout","battle_shout","bloodthirst","rend","shield_slam","bloodrage"],"2":["consecration","exorcism","hammer_of_wrath","holy_shock","holy_wrath","judgement","hammer_of_justice","holy_light","divine_shield","holy_shield","redemption"],"3":["auto_shot","arcane_shot","multi_shot","serpent_sting","volley","explosive_trap","concussive_shot","aimed_shot","immolation_trap","frost_trap","hunters_mark"],"4":["sinister_strike","eviscerate","blade_flurry","rupture","kidney_shot","gouge","ghostly_strike","adrenaline_rush","backstab","slice_and_dice","seal_fate"],"5":["smite","sw_pain","mind_blast","holy_nova","pw_shield","renew","holy_fire","mind_flay","psychic_scream","devouring_plague","lightwell"],"7":["lightning_bolt","chain_lightning","earth_shock","flame_shock","frost_shock","lightning_shield","magma_totem","searing_totem","fire_nova","healing_wave","call_of_flame"],"8":["fireball","frostbolt","arcane_missiles","frost_nova","arcane_explosion","blizzard","flamestrike","fire_blast","cone_of_cold","blast_wave","pyroblast","ice_barrier","polymorph"],"9":["shadow_bolt","corruption","immolate","curse_of_agony","rain_of_fire","hellfire","death_coil","searing_pain","drain_life","fear","soul_fire","demonic_empowerment"],"11":["wrath","moonfire","starfire","hurricane","insect_swarm","entangling_roots","rejuvenation","regrowth","thorns","swipe","shred","faerie_fire"]}};
+const RARITY={J:id=>4,A:id=>CODEX.A[id][1],L:()=>4};
+function seenMap(){const i=find("seen");return new Map(i>=0?(L[i].split("|")[1]||"").split(",").filter(Boolean).map(x=>{const k=x.lastIndexOf("=");return[x.slice(0,k),x.slice(k+1)]}):[])}
+function putSeen(m){const o=[...m].sort((a,b)=>a[0]<b[0]?-1:1).map(([k,v])=>k+"="+v).join(",");if(o)setLine("seen",undefined,o);else removeLine("seen")}
+function codexKeys(){const ks=[];Object.keys(CODEX.J).forEach(k=>ks.push([k,RARITY.J(k)]));Object.keys(CODEX.A).forEach(k=>ks.push([k,RARITY.A(k)]));Object.values(CODEX.L).flat().forEach(k=>ks.push(["legendary:"+k,4]));return ks}
+function renderCodex(){
+  const m=seenMap();
+  const box=(id,name,rar,icon)=>`<label class="tcheck">${icon}<span>${name}</span><input type="checkbox" data-k="${id}" data-r="${rar}"${m.has(id)?" checked":""}></label>`;
+  $("cxJ").innerHTML=Object.entries(CODEX.J).map(([k,n])=>box(k,n,RARITY.J(k),ico(IC.j[k]))).join("");
+  $("cxA").innerHTML=Object.entries(CODEX.A).map(([k,[n,r]])=>box(k,n,r,ico(IC.a[k]))).join("");
+  $("cxL").innerHTML=CLS_ORDER.map(c=>`<p style="display:flex;align-items:center;gap:8px;margin-top:14px"><strong>${CLASS_NAMES[c]}</strong></p><div class="grid">`+CODEX.L[c].map(k=>box("legendary:"+k,(IC.ab[k]||[])[1]||pretty(k),4,IC.ab[k]?ico(IC.ab[k][0]):clsIco(c))).join("")+"</div>").join("");
+  document.querySelectorAll("#tab-codex input[type=checkbox]").forEach(cb=>cb.addEventListener("change",()=>{
+    const s=seenMap(); if(cb.checked){if(!s.has(cb.dataset.k))s.set(cb.dataset.k,cb.dataset.r)}else s.delete(cb.dataset.k); putSeen(s); syncRaw()}));
+}
+$("cxAll").addEventListener("click",()=>{const s=seenMap();codexKeys().forEach(([k,r])=>{if(!s.has(k))s.set(k,String(r))});putSeen(s);render()});
+$("cxNone").addEventListener("click",()=>{const k=new Set(codexKeys().map(x=>x[0])),s=seenMap();[...s.keys()].forEach(x=>{if(k.has(x))s.delete(x)});putSeen(s);render()});
+
+
+/* ---------- icons: same source the game uses (loaded from the web when you are online) ---------- */
+const ICON_BASE="https://wow.zamimg.com/images/wow/icons/large/";
+const IC={"t":{"imp_heroic":["Ability_Warrior_DecisiveStrike","Trauma"],"deflection":["Ability_Parry","Deflection"],"imp_rend":["Ability_Gouge","Improved Rend"],"tactical_mastery":["Spell_Nature_EnchantArmor","Tactical Mastery"],"deep_wounds":["Ability_BackStab","Deep Wounds"],"anger_management":["Spell_Holy_BlessingOfStamina","Anger Management"],"impale":["Ability_SearingArrow","Impale"],"two_hand_spec":["INV_Axe_09","Two-Handed Weapon Specialization"],"sweeping_strikes":["Ability_Rogue_SliceDice","Sweeping Strikes"],"imp_execute":["INV_Sword_48","Improved Execute"],"sword_spec":["INV_Sword_27","Sword Specialization"],"weapon_mastery":["Ability_Warrior_Sunder","Weapon Mastery"],"mortal_wounds":["Ability_Warrior_SavageBlow","Mortal Wounds"],"cruelty":["Ability_Rogue_Eviscerate","Cruelty"],"booming_voice":["Spell_Nature_Purge","Booming Voice"],"unbridled_wrath":["Spell_Shadow_BloodBoil","Bloodlust"],"imp_battle_shout":["Ability_Warrior_BattleShout","Improved Battle Shout"],"rampage":["Spell_Shadow_UnholyFrenzy","Rampage"],"imp_cleave":["Ability_Warrior_Cleave","Improved Cleave"],"dual_wield_spec":["Ability_DualWield","Dual Wield Specialization"],"imp_whirlwind":["Ability_Whirlwind","Improved Whirlwind"],"flurry":["Ability_GhoulFrenzy","Flurry"],"death_wish":["Spell_Shadow_DeathPact","Death Wish"],"blood_craze":["Spell_Shadow_SummonImp","Blood Craze"],"imp_berserker":["Ability_Racial_Avatar","Improved Berserker Stance"],"bladestorm":["Ability_Whirlwind","Bladestorm"],"shield_spec":["INV_Shield_06","Shield Specialization"],"anticipation":["Spell_Nature_MirrorImage","Anticipation"],"imp_thunder_clap":["Ability_ThunderClap","Improved Thunder Clap"],"toughness":["Spell_Holy_Devotion","Toughness"],"heavy_shield":["INV_Shield_05","Heavy Shield"],"shockwave":["Ability_Warrior_Revenge","Shockwave"],"imp_demo_shout":["Ability_Warrior_WarCry","Improved Demoralizing Shout"],"defiance":["Ability_Warrior_InnerRage","Defiance"],"imp_shield_slam":["Ability_Warrior_ShieldBash","Improved Shield Slam"],"shield_mastery":["Ability_Defend","Shield Mastery"],"fortified":["Ability_Warrior_ShieldWall","Fortified"],"last_stand":["Spell_Holy_AshesToAshes","Last Stand"],"unbreakable":["Ability_Warrior_Sunder","Unbreakable"],"titan":["Ability_Warrior_DefensiveStance","Titan"],"divine_strength":["Ability_GolemThunderClap","Divine Strength"],"divine_intellect":["Spell_Nature_Sleep","Divine Intellect"],"healing_light":["Spell_Holy_HolyBolt","Healing Light"],"imp_seal":["Ability_ThunderBolt","Improved Seal of Righteousness"],"divine_favor":["Spell_Holy_Heal","Divine Favor"],"unyielding_faith":["Spell_Holy_UnyieldingFaith","Unyielding Faith"],"holy_power":["Spell_Holy_Power","Holy Power"],"lasting_judgement":["Spell_Holy_HealingAura","Lasting Judgement"],"daybreak":["Spell_Holy_Excorcism","Daybreak"],"sanctified_light":["Spell_Holy_HealingFocus","Sanctified Light"],"holy_guidance":["Spell_Holy_SealOfSalvation","Holy Guidance"],"purifying_power":["Spell_Holy_Purify","Purifying Power"],"lights_grace":["Spell_Holy_SearingLight","Light's Grace"],"imp_devotion":["Spell_Holy_DevotionAura","Improved Devotion Aura"],"redoubt":["Ability_Defend","Redoubt"],"imp_consecration":["Spell_Holy_InnerFire","Improved Consecration"],"spiritual_attunement":["Spell_Holy_BlessedRecovery","Spiritual Attunement"],"weighted_hammer":["Spell_Holy_SealOfMight","Weighted Hammer"],"hallowed_ground":["Spell_Holy_SealOfProtection","Hallowed Ground"],"judgement_crusader":["Spell_Holy_HolySmite","Judgement of the Crusader"],"righteous_fury":["Spell_Holy_SealOfFury","Righteous Fury"],"imp_hoj":["Spell_Holy_SealOfWrath","Improved Hammer of Justice"],"blessed_life":["Spell_Holy_GreaterBlessingofSanctuary","Blessed Life"],"ardent_defender":["Spell_Holy_HolyProtection","Ardent Defender"],"divine_intervention":["Spell_Nature_TimeStop","Divine Intervention"],"sacred_duty":["Spell_Holy_DivineIntervention","Sacred Duty"],"hammer_righteous":["Spell_Holy_BlessingOfProtection","Hammer of the Righteous"],"imp_might":["Spell_Holy_FistOfJustice","Improved Blessing of Might"],"benediction":["Spell_Frost_WindWalkOn","Benediction"],"imp_judgement":["Spell_Holy_RighteousFury","Improved Judgement"],"deflection_pal":["Ability_Parry","Deflection"],"seal_of_command":["Ability_Warrior_InnerRage","Seal of Command"],"pursuit":["Spell_Holy_PersuitofJustice","Pursuit of Justice"],"conviction":["Spell_Holy_RetributionAura","Conviction"],"righteous_hammer":["Ability_ThunderClap","Righteous Hammer"],"art_of_war":["Spell_Holy_Excorcism_02","The Art of War"],"sanctity_aura":["Spell_Holy_MindVision","Sanctity Aura"],"eye_for_an_eye":["Spell_Holy_EyeforanEye","Eye for an Eye"],"vindication":["Spell_Holy_Vindication","Vindication"],"divine_storm":["Spell_Holy_SealOfRighteousness","Divine Storm"],"imp_hawk":["Spell_Nature_RavenForm","Improved Aspect of the Hawk"],"endurance_training":["Spell_Nature_Reincarnation","Endurance Training"],"imp_monkey":["Ability_Hunter_AspectOfTheMonkey","Improved Aspect of the Monkey"],"pathfinding":["Ability_Mount_JungleTiger","Pathfinding"],"tame_beast":["Ability_Hunter_BeastTaming","Tame Beast"],"unleashed_fury":["Ability_BullRush","Unleashed Fury"],"ferocity_hunter":["INV_Misc_MonsterClaw_04","Ferocity"],"spirit_bond":["Ability_Druid_DemoralizingRoar","Spirit Bond"],"frenzy_hunter":["INV_Misc_MonsterClaw_03","Frenzy"],"bestial_discipline":["Spell_Nature_AbolishMagic","Bestial Discipline"],"intimidation":["Ability_Devour","Intimidation"],"ferocious_inspiration":["Ability_Hunter_BeastCall","Ferocious Inspiration"],"bestial_wrath":["Ability_Druid_FerociousBite","Bestial Wrath"],"lethal_shots":["Ability_SearingArrow","Lethal Shots"],"efficiency":["Spell_Frost_WizardMark","Efficiency"],"imp_arcane_shot":["Ability_ImpalingBolt","Improved Arcane Shot"],"imp_serpent_sting":["Ability_Hunter_Quickshot","Improved Serpent Sting"],"piercing_shots":["Ability_PierceDamage","Piercing Shots"],"mortal_shots":["INV_Spear_07","Mortal Shots"],"ranged_spec":["INV_Weapon_Rifle_06","Ranged Weapon Specialization"],"imp_multi_shot":["Ability_UpgradeMoonGlaive","Improved Multi-Shot"],"rapid_fire":["Ability_Hunter_RunningShot","Rapid Fire"],"barrage":["Ability_Marksmanship","Barrage"],"hawk_eye":["Ability_TownWatch","Hawk Eye"],"scatter_shot":["Ability_GolemStormBolt","Scatter Shot"],"kill_shot":["INV_Weapon_Rifle_08","Kill Shot"],"monster_slaying":["INV_Misc_Head_Dragon_Black","Monster Slaying"],"deflection_hunter":["Ability_Parry","Deflection"],"clever_traps":["Spell_Nature_TimeStop","Clever Traps"],"survivalist":["Spell_Shadow_Twilight","Survivalist"],"entrapment":["Spell_Nature_StrangleVines","Entrapment"],"savage_strikes":["Ability_Racial_BloodRage","Savage Strikes"],"trap_mastery":["Ability_Ensnare","Trap Mastery"],"surefooted":["Ability_Kick","Surefooted"],"explosive_ammo":["Spell_Fire_SelfDestruct","Explosive Ammunition"],"killer_instinct":["Spell_Holy_BlessingOfStamina","Killer Instinct"],"lightning_reflexes":["Spell_Nature_Invisibilty","Lightning Reflexes"],"counterattack":["Ability_Warrior_Challange","Counterattack"],"wyvern_sting":["INV_Spear_02","Wyvern Sting"],"imp_eviscerate":["Ability_Rogue_Eviscerate","Improved Eviscerate"],"malice":["Ability_Racial_BloodRage","Malice"],"ruthlessness":["Ability_Druid_Disembowel","Ruthlessness"],"murder":["Spell_Shadow_DeathScream","Murder"],"deadly_poison":["Ability_Rogue_DualWeild","Deadly Poison"],"lethality":["Ability_CriticalStrike","Lethality"],"imp_poisons":["Ability_Poisons","Improved Poisons"],"vile_poisons":["Ability_Rogue_FeignDeath","Vile Poisons"],"mutilate":["INV_Weapon_ShortBlade_05","Mutilate"],"seal_fate":["Spell_Shadow_ChillTouch","Seal Fate"],"vigor":["Spell_Nature_EarthBindTotem","Vigor"],"remorseless":["Ability_FiegnDead","Remorseless Attacks"],"toxic_bloom":["Spell_Nature_NullifyPoison","Toxic Bloom"],"precision_rogue":["Ability_Marksmanship","Precision"],"lightning_reflexes_rogue":["Spell_Nature_Invisibilty","Lightning Reflexes"],"imp_sinister":["Spell_Shadow_RitualOfSacrifice","Improved Sinister Strike"],"endurance_rogue":["Spell_Shadow_ShadowWard","Endurance"],"blade_flurry_talent":["Ability_Warrior_PunishingBlow","Blade Flurry"],"dual_wield_rogue":["Ability_DualWield","Dual Wield Specialization"],"sword_spec_rogue":["INV_Sword_27","Sword Specialization"],"weapon_expertise":["Spell_Holy_BlessingOfStrength","Weapon Expertise"],"adrenaline":["Spell_Shadow_ShadowWordDominate","Adrenaline Rush"],"aggression":["Ability_Racial_Avatar","Aggression"],"imp_slice_dice":["Ability_Rogue_SliceDice","Improved Slice and Dice"],"riposte":["Ability_Warrior_Challange","Riposte"],"killing_spree":["Ability_Rogue_Sprint","Killing Spree"],"master_deception":["Spell_Shadow_Charm","Master of Deception"],"opportunity":["Ability_Warrior_WarCry","Opportunity"],"elusiveness":["Spell_Magic_LesserInvisibilty","Elusiveness"],"initiative":["Spell_Shadow_Fumble","Initiative"],"cheat_death":["Ability_Rogue_FeignDeath","Cheat Death"],"imp_ambush":["Ability_Rogue_Ambush","Improved Ambush"],"serrated_blades":["INV_Sword_17","Serrated Blades"],"setup":["Spell_Nature_MirrorImage","Setup"],"preparation":["Spell_Shadow_AntiShadow","Preparation"],"dirty_deeds":["Spell_Shadow_SummonSuccubus","Dirty Deeds"],"deadliness":["INV_Weapon_Crossbow_07","Deadliness"],"heightened_senses":["Ability_Ambush","Heightened Senses"],"shadow_dance":["Spell_Shadow_LifeDrain","Shadow Dance"],"unbreakable_will":["Spell_Magic_MageArmor","Unbreakable Will"],"wand_spec":["INV_Wand_01","Wand Specialization"],"imp_pw_shield":["Spell_Holy_PowerWordShield","Improved Power Word: Shield"],"martyrdom":["Spell_Nature_Tranquility","Martyrdom"],"divine_aegis":["Spell_Holy_DivineIntervention","Divine Aegis"],"mental_agility":["Ability_Hibernation","Mental Agility"],"meditation":["Spell_Nature_Sleep","Meditation"],"mental_strength":["Spell_Nature_EnchantArmor","Mental Strength"],"rapture":["Spell_Holy_PowerInfusion","Rapture"],"force_of_will":["Spell_Nature_SlowingTotem","Force of Will"],"silent_resolve":["Spell_Nature_ManaRegenTotem","Silent Resolve"],"imp_inner_fire":["Spell_Holy_InnerFire","Improved Inner Fire"],"penance":["Spell_Holy_SearingLight","Penance"],"holy_spec":["Spell_Holy_SealOfSalvation","Holy Specialization"],"imp_renew":["Spell_Holy_Renew","Improved Renew"],"divine_fury":["Spell_Holy_SealOfWrath","Divine Fury"],"holy_reach":["Spell_Holy_Purify","Holy Reach"],"holy_nova_talent":["Spell_Holy_HolyNova","Radiance"],"inspiration":["Spell_Holy_LayOnHands","Inspiration"],"searing_light":["Spell_Holy_SearingLightPriest","Searing Light"],"spiritual_guidance":["Spell_Holy_SpiritualGuidence","Spiritual Guidance"],"holy_fire_talent":["Spell_Holy_SearingLight","Purifying Flame"],"spiritual_healing":["Spell_Nature_MoonGlow","Spiritual Healing"],"blessed_recovery":["Spell_Holy_BlessedRecovery","Blessed Recovery"],"holy_concentration":["Spell_Holy_SpellWarding","Holy Concentration"],"chastise":["Spell_Holy_SealOfWrath","Chastise"],"spirit_tap":["Spell_Shadow_Requiem","Spirit Tap"],"blackout":["Spell_Shadow_GatherShadows","Blackout"],"imp_swp":["Spell_Shadow_ShadowWordPain","Improved Shadow Word: Pain"],"shadow_focus":["Spell_Shadow_BurningSpirit","Shadow Focus"],"shadow_weaving":["Spell_Shadow_BlackPlague","Shadow Weaving"],"imp_mind_blast":["Spell_Shadow_UnholyFrenzy","Improved Mind Blast"],"darkness":["Spell_Shadow_Twilight","Darkness"],"imp_psychic_scream":["Spell_Shadow_PsychicScream","Improved Psychic Scream"],"shadowy_apparitions":["Spell_Shadow_Haunting","Shadowy Apparitions"],"shadow_reach":["Spell_Shadow_ChillTouch","Shadow Reach"],"shadow_power":["Spell_Shadow_SealOfKings","Shadow Power"],"imp_vampiric":["Spell_Shadow_ImprovedVampiricEmbrace","Improved Vampiric Embrace"],"shadowform":["Spell_Shadow_Shadowform","Shadowform"],"convection":["Spell_Nature_WispSplode","Convection"],"concussion":["Spell_Fire_Fireball","Concussion"],"earths_grasp":["Spell_Nature_StoneClawTotem","Elemental Warding"],"call_of_flame":["Spell_Fire_Immolation","Call of Flame"],"lightning_overload":["Spell_Nature_CallStorm","Lightning Overload"],"reverberation":["Spell_Frost_FrostWard","Reverberation"],"call_of_thunder":["Spell_Nature_Lightning","Call of Thunder"],"imp_fire_totems":["Spell_Fire_SealOfFire","Improved Fire Totems"],"elemental_fury":["Spell_Fire_Volcano","Elemental Fury"],"lightning_mastery":["Spell_Lightning_LightningBolt01","Lightning Mastery"],"storm_reach":["Spell_Nature_StormReach","Storm Reach"],"elemental_devastation":["Spell_Fire_ElementalDevastation","Elemental Devastation"],"elemental_mastery":["Spell_Nature_WispHeal","Elemental Mastery"],"imp_healing_wave":["Spell_Nature_MagicImmunity","Improved Healing Wave"],"tidal_focus":["Spell_Frost_ManaRecharge","Tidal Focus"],"totemic_focus":["Spell_Nature_MoonGlow","Totemic Focus"],"natures_guidance":["Spell_Frost_Stun","Nature's Guidance"],"twin_totems":["Spell_Totem_WardOfDraining","Call of the Elements"],"restorative_totems":["Spell_Nature_ManaRegenTotem","Restorative Totems"],"tidal_mastery":["Spell_Nature_Tranquility","Tidal Mastery"],"healing_way":["Spell_Nature_HealingWay","Healing Way"],"reincarnation":["Spell_Nature_Reincarnation","Reincarnation"],"purification":["Spell_Frost_WizardMark","Purification"],"totemic_mastery":["Spell_Nature_NullWard","Totemic Mastery"],"ancestral_healing":["Spell_Nature_UndyingStrength","Ancestral Healing"],"totemic_call":["Spell_Fire_SealOfFire","Totemic Wrath"],"arcane_focus":["Spell_Holy_Devotion","Arcane Focus"],"arcane_subtlety":["Spell_Holy_DispelMagic","Arcane Subtlety"],"imp_arcane_explosion":["Spell_Nature_WispSplode","Improved Arcane Explosion"],"magic_absorption":["Spell_Nature_AstralRecalGroup","Magic Absorption"],"arcane_concentration":["Spell_Shadow_ManaBurn","Arcane Concentration"],"arcane_meditation":["Spell_Shadow_SiphonMana","Arcane Meditation"],"arcane_mind":["Spell_Shadow_Charm","Arcane Mind"],"imp_blink":["Spell_Arcane_Blink","Improved Blink"],"presence_of_mind":["Spell_Nature_EnchantArmor","Presence of Mind"],"arcane_instability":["Spell_Shadow_Teleport","Arcane Instability"],"arcane_fortitude":["Spell_Arcane_ArcaneResilience","Arcane Fortitude"],"arcane_reach":["Spell_Arcane_StarFire","Arcane Reach"],"arcane_power":["Spell_Nature_Lightning","Arcane Power"],"imp_fireball":["Spell_Fire_FlameBolt","Improved Fireball"],"impact":["Spell_Fire_MeteorStorm","Impact"],"flame_throwing":["Spell_Fire_Flare","Flame Throwing"],"imp_flamestrike":["Spell_Fire_SoulBurn","Improved Flamestrike"],"ignite":["Spell_Fire_Incinerate","Ignite"],"incinerate":["Spell_Fire_FlameShock","Incinerate"],"master_elements":["Spell_Fire_MasterOfElements","Master of Elements"],"critical_mass":["Spell_Nature_WispHeal","Critical Mass"],"hot_streak":["Spell_Fire_Fireball","Hot Streak"],"fire_power":["Spell_Fire_Immolation","Fire Power"],"burning_soul":["Spell_Fire_Fire","Burning Soul"],"imp_blast_wave":["Spell_Holy_Excorcism_02","Improved Blast Wave"],"pyroclasm":["Spell_Fire_Fireball02","Pyroclasm"],"frost_warding":["Spell_Frost_FrostWard","Frost Warding"],"imp_frostbolt":["Spell_Frost_FrostBolt02","Improved Frostbolt"],"elemental_precision":["Spell_Ice_MagicDamage","Elemental Precision"],"ice_shards":["Spell_Frost_IceShard","Ice Shards"],"frostbite":["Spell_Frost_FrostArmor","Frostbite"],"piercing_ice":["Spell_Frost_Frostbolt","Piercing Ice"],"shatter":["Spell_Frost_FrostShock","Shatter"],"arctic_reach":["Spell_Shadow_DarkRitual","Arctic Reach"],"splitting_ice":["Spell_Frost_WizardMark","Splitting Ice"],"frost_channeling":["Spell_Frost_Stun","Frost Channeling"],"permafrost":["Spell_Frost_Wisp","Permafrost"],"imp_ice_barrier":["Spell_Ice_Lament","Improved Ice Barrier"],"water_elemental":["Spell_Frost_SummonWaterElemental","Summon Water Elemental"],"suppression":["Spell_Shadow_UnsummonBuilding","Suppression"],"imp_corruption":["Spell_Shadow_AbominationExplosion","Shadow Embrace"],"imp_coa":["Spell_Shadow_CurseOfSargeras","Improved Curse of Agony"],"imp_drain_life":["Spell_Shadow_LifeDrain02","Improved Drain Life"],"nightfall":["Spell_Shadow_Twilight","Nightfall"],"dark_pact":["Spell_Shadow_DarkRitual","Soul Reaping"],"grim_reach":["Spell_Shadow_CallofBone","Grim Reach"],"shadow_mastery":["Spell_Shadow_ShadeTrueSight","Shadow Mastery"],"contagion":["Spell_Shadow_PlagueCloud","Contagion"],"amplify_curse":["Spell_Shadow_Contagion","Amplify Curse"],"siphon_life":["Spell_Shadow_Requiem","Siphon Life"],"fel_concentration":["Spell_Shadow_FingerOfDeath","Fel Concentration"],"seed_of_corruption":["Spell_Shadow_CurseOfMannoroth","Seed of Corruption"],"demonic_familiar":["Spell_Shadow_SummonImp","Demonic Familiar"],"demonic_embrace":["Spell_Shadow_Metamorphosis","Demonic Embrace"],"fel_stamina":["Spell_Shadow_AntiShadow","Fel Stamina"],"unholy_power":["Spell_Shadow_ShadowWordDominate","Unholy Power"],"soul_devourer":["Spell_Shadow_SummonFelHunter","Soul Devourer"],"soul_link":["Spell_Shadow_GatherShadows","Soul Link"],"felfire_training":["Spell_Shadow_Possession","Demonic Echoes"],"master_demonologist":["Spell_Shadow_ShadowPact","Master Demonologist"],"legion_gate":["Spell_Shadow_RitualOfSacrifice","Legion Gate"],"demonic_supremacy":["Spell_Shadow_CurseOfAchimonde","Demonic Supremacy"],"summon_infernal":["Spell_Shadow_SummonInfernal","Summon Infernal"],"summon_doomguard":["Spell_Shadow_AntiMagicShell","Summon Doomguard"],"pact_of_the_annihilan":["Spell_Shadow_UnholyStrength","Pact of the Annihilan"],"butcher":["Ability_Warrior_Cleave","Butcher"],"imp_shadow_bolt":["Spell_Shadow_ShadowBolt","Improved Shadow Bolt"],"cataclysm":["Spell_Fire_WindsofWoe","Cataclysm"],"intensity":["Spell_Fire_LavaSpawn","Intensity"],"aftermath":["Spell_Fire_Immolation","Scorched Earth"],"shadowburn":["Spell_Shadow_ScourgeBuild","Shadow Cleave"],"imp_searing_pain":["Spell_Fire_SoulBurn","Improved Searing Pain"],"destructive_reach":["Spell_Shadow_CorpseExplode","Destructive Reach"],"devastation":["Spell_Fire_FlameShock","Devastation"],"conflagrate":["Spell_Fire_Fireball","Conflagrate"],"emberstorm":["Spell_Fire_SelfDestruct","Emberstorm"],"ruin":["Spell_Shadow_ShadowWordPain","Ruin"],"bane":["Spell_Shadow_DeathPact","Bane"],"rain_of_chaos":["Spell_Shadow_RainOfFire","Rain of Chaos"],"imp_wrath":["Spell_Nature_AbolishMagic","Improved Wrath"],"natures_grasp":["Spell_Nature_NaturesWrath","Nature's Grasp"],"imp_moonfire":["Spell_Nature_StarFall","Improved Moonfire"],"natural_weapons":["INV_Staff_01","Natural Weapons"],"omen_of_clarity":["Spell_Nature_CrystalBall","Omen of Clarity"],"vengeance_druid":["Spell_Nature_Purge","Vengeance"],"imp_starfire":["Spell_Arcane_StarFire","Improved Starfire"],"moonglow":["Spell_Nature_Sentinal","Moonglow"],"starfall":["Spell_Arcane_StarFire","Starfall"],"imp_hurricane":["Spell_Nature_Cyclone","Gale Winds"],"moonfury":["Spell_Nature_MoonGlow","Moonfury"],"natures_reach":["Spell_Nature_NatureTouchGrow","Nature's Reach"],"force_of_nature":["Spell_Nature_ForceOfNature","Force of Nature"],"ferocity_druid":["Ability_Hunter_Pet_Hyena","Ferocity"],"feral_aggression":["Ability_Druid_DemoralizingRoar","Feral Aggression"],"feral_instinct":["Ability_Ambush","Feral Instinct"],"brutal_impact":["Ability_Druid_Enrage","Enrage"],"rake":["Ability_Druid_Disembowel","Rake"],"sharpened_claws":["INV_Misc_MonsterClaw_04","Sharpened Claws"],"predatory_strikes":["Ability_Hunter_Pet_Cat","Predatory Strikes"],"thick_hide":["INV_Misc_Pelt_Bear_03","Thick Hide"],"blood_frenzy":["Ability_GhoulFrenzy","Blood Frenzy"],"savage_fury":["Ability_Druid_Ravage","Savage Fury"],"heart_of_wild":["Spell_Holy_BlessingOfAgility","Heart of the Wild"],"primal_fury":["Ability_Racial_Cannibalize","Primal Fury"],"leader_of_pack":["Ability_Racial_BearForm","Dire Bear Form"],"cat_form":["Ability_Druid_CatForm","Cat Form"],"imp_motw":["Spell_Nature_Regeneration","Improved Mark of the Wild"],"furor":["Spell_Holy_BlessingOfStamina","Furor"],"imp_healing_touch":["Spell_Nature_HealingTouch","Improved Healing Touch"],"natures_focus":["Spell_Nature_HealingWaveGreater","Nature's Focus"],"swiftmend":["INV_Relics_IdolofRejuvenation","Swiftmend"],"reflection":["Spell_Frost_WindWalkOn","Reflection"],"tranquil_spirit":["Spell_Holy_ElunesGrace","Tranquil Spirit"],"imp_rejuvenation":["Spell_Nature_Rejuvenation","Improved Rejuvenation"],"tranquility":["Spell_Nature_Tranquility","Tranquility"],"gift_of_nature":["Spell_Nature_ProtectionformNature","Gift of Nature"],"imp_tranquility":["Spell_Nature_Tranquility","Improved Tranquility"],"natural_shapeshifter":["Spell_Nature_WispSplode","Natural Shapeshifter"],"tree_of_life":["Spell_Nature_ResistNature","Tree of Life"],"enh_thundering_strikes":["Ability_ThunderBolt","Thundering Strikes"],"enh_earthen_bulwark":["Spell_Nature_StoneSkinTotem","Earthen Bulwark"],"enh_resonant_shocks":["Spell_Nature_EarthShock","Resonant Shocks"],"enh_shattering_elements":["Spell_Frost_FrostShock","Shattering Elements"],"rockbiter_initiation":["Spell_Nature_RockBiter","Rockbiter Initiation"],"enh_windfury_weapon":["Spell_Nature_Cyclone","Windfury Weapon"],"enh_flametongue_weapon":["Spell_Fire_FlameTounge","Flametongue Weapon"],"enh_frostbrand_weapon":["Spell_Frost_FrostBrand","Frostbrand Weapon"],"enh_unleashed_weapons":["Ability_DualWield","Unleashed Weapons"],"enh_ancestral_fortitude":["Spell_Nature_UndyingStrength","Ancestral Fortitude"],"enh_flurry":["Ability_GhoulFrenzy","Flurry"],"enh_sweeping_storm":["Spell_Holy_SealOfMight","Sweeping Storm"],"enh_stormbound_echoes":["Spell_Nature_CallStorm","Stormbound Echoes"]},"p":{"rerolls":["Spell_Nature_TimeStop","Second Thoughts"],"banish":["Spell_Shadow_Teleport","Banish"],"skip":["INV_Misc_Coin_02","Skip"],"opening":["INV_Misc_Book_09","Opening Hand"],"veteran":["INV_Misc_Book_11","Veteran's Lessons"],"keen":["INV_Misc_Spyglass_02","Keen Eye"],"companion":["INV_Box_PetCarrier_01","Companion"],"leash":["Ability_Hunter_BeastCall","Long Leash"],"paws":["Ability_Hunter_Pet_Cat","Quick Paws"],"instinct_gold":["INV_Misc_Coin_01","Gold-sniffer"],"instinct_wisps":["Spell_Nature_WispSplode","Wisp-herder"],"instinct_runes":["INV_Misc_Rune_01","Rune-hound"],"second":["INV_Box_PetCarrier_01","Second Companion"]},"j":{"accuria":"INV_Jewelry_Ring_15","quick_strike":"INV_Jewelry_Ring_07","dark_iron":"INV_Jewelry_Ring_14","dragonslayer":"INV_Jewelry_Ring_41","archimtiros":"INV_Jewelry_Ring_40","devoured":"INV_Jewelry_Ring_AhnQiraj_05","spell_power":"INV_Jewelry_Ring_38","seal_damned":"INV_Jewelry_Ring_51Naxxramas","blooddrinker":"INV_Jewelry_Ring_49Naxxramas","earthstrike":"Spell_Nature_AbolishMagic","tep":"INV_Misc_StoneTablet_11","lifegiving":"INV_Misc_Gem_Pearl_05","hoj":"INV_Jewelry_Talisman_01","blackhand":"INV_Misc_ArmorKit_09","carrot":"INV_Misc_Food_54","remote":"INV_Misc_PocketWatch_01","insignia":"INV_Jewelry_TrinketPVP_02","eldre_thalas":"INV_Jewelry_Talisman_10","chosen":"INV_Jewelry_Talisman_08","onyxia_blood":"Spell_Shadow_LifeDrain","war_horn":"INV_Misc_Horn_01","soulstone":"INV_Misc_Orb_04","star_of_mystaria":"INV_Enchant_EssenceMagicLarge"},"a":{"mark_of_fordring":"INV_Jewelry_Talisman_07","talvash":"INV_Jewelry_Necklace_02","south_seas_kelp":"INV_Jewelry_Necklace_26","prestor":"INV_Jewelry_Necklace_17","animated_chain":"INV_Jewelry_Necklace_01","woven_ivy":"INV_Misc_Herb_15","darkmoon":"INV_Jewelry_Necklace_14","jeklik":"INV_Jewelry_Necklace_03","eye_of_hakkar":"INV_Jewelry_Necklace_22","steadfast_might":"INV_Jewelry_Amulet_03","enlightenment":"INV_Jewelry_Necklace_10","vek_nilash":"INV_Jewelry_Necklace_AhnQiraj_01","fallen_dragon":"INV_Jewelry_Necklace_12","malice_stone":"INV_Jewelry_Necklace_29Naxxramas","onyxia_tooth":"INV_Jewelry_Necklace_09","fire_lord":"INV_Jewelry_Amulet_05"},"pet":{"squirrel":"INV_Box_PetCarrier_01","rabbit":"INV_Box_PetCarrier_01","macaw":"Ability_Hunter_Pet_Owl","owl":"Ability_Hunter_Pet_Owl","frog":"Ability_Hunter_Pet_Turtle","kingsnake":"Ability_Hunter_Pet_WindSerpent","darter":"Ability_Hunter_Pet_WindSerpent","whelp":"INV_Misc_Head_Dragon_Black","zergling":"Ability_Hunter_Pet_Scorpid","chicken":"INV_Box_PetCarrier_01","roach":"Ability_Hunter_Pet_Crab","panda":"Ability_Hunter_Pet_Bear","zulian_tiger":"Ability_Mount_JungleTiger","drakonid":"INV_Misc_Head_Dragon_Black","eye_of_cthun":"INV_Misc_AhnQirajTrinket_01","stitches":"Spell_Shadow_RaiseDead","doomguard":"Spell_Shadow_AntiMagicShell","devilsaur":"Ability_Hunter_Pet_Raptor","ogre":"Ability_Hunter_Pet_Gorilla","gordok":"INV_Crown_01","azure_whelp":"INV_Misc_Head_Dragon_Blue","sapphiron":"INV_Misc_Head_Dragon_Blue","ancient_protector":"Spell_Nature_Tranquility","herod":"Ability_Whirlwind","nefarian":"INV_Misc_Head_Dragon_Black","bigglesworth":"Ability_Hunter_Pet_Cat"}};
+const ico=(n,c)=>n?`<img class="ic ${c||""}" alt="" loading="lazy" src="${ICON_BASE}${String(n).toLowerCase()}.jpg" onerror="this.classList.add('x');this.style.visibility='hidden'">`:`<span class="ic ${c||""} x"></span>`;
+const CLS_KEY={1:"warrior",2:"paladin",3:"hunter",4:"rogue",5:"priest",7:"shaman",8:"mage",9:"warlock",11:"druid"};
+const clsIco=(c,x)=>ico("classicon_"+CLS_KEY[c],"cl "+(x||""));
+IC.ab={"cleave":["Ability_Warrior_Cleave","Cleave"],"whirlwind":["Ability_Whirlwind","Whirlwind"],"thunder_clap":["Spell_Nature_ThunderClap","Thunder Clap"],"mortal_strike":["Ability_Warrior_SavageBlow","Mortal Strike"],"execute":["INV_Sword_48","Execute"],"demo_shout":["Ability_Warrior_WarCry","Demoralizing Shout"],"battle_shout":["Ability_Warrior_BattleShout","Battle Shout"],"bloodthirst":["Spell_Nature_BloodLust","Bloodthirst"],"rend":["Ability_Gouge","Rend"],"shield_slam":["INV_Shield_05","Shield Slam"],"bloodrage":["Ability_Racial_BloodRage","Bloodrage"],"consecration":["Spell_Holy_InnerFire","Consecration"],"exorcism":["Spell_Holy_Excorcism_02","Exorcism"],"hammer_of_wrath":["Ability_ThunderClap","Hammer of Wrath"],"holy_shock":["Spell_Holy_SearingLight","Holy Shock"],"holy_wrath":["Spell_Holy_Excorcism","Holy Wrath"],"judgement":["Spell_Holy_RighteousFury","Judgement"],"hammer_of_justice":["Spell_Holy_SealOfMight","Hammer of Justice"],"holy_light":["Spell_Holy_HolyBolt","Holy Light"],"divine_shield":["Spell_Holy_DivineIntervention","Divine Shield"],"holy_shield":["Spell_Holy_BlessingOfProtection","Holy Shield"],"redemption":["Spell_Holy_Resurrection","Redemption"],"auto_shot":["Ability_Whirlwind","Auto Shot"],"arcane_shot":["Ability_ImpalingBolt","Arcane Shot"],"multi_shot":["Ability_UpgradeMoonGlaive","Multi-Shot"],"serpent_sting":["Ability_Hunter_Quickshot","Serpent Sting"],"volley":["Ability_Marksmanship","Volley"],"explosive_trap":["Spell_Fire_SelfDestruct","Explosive Trap"],"concussive_shot":["Spell_Frost_Stun","Concussive Shot"],"aimed_shot":["INV_Spear_07","Aimed Shot"],"immolation_trap":["Spell_Fire_FlameShock","Immolation Trap"],"frost_trap":["Spell_Frost_FreezingBreath","Frost Trap"],"hunters_mark":["Ability_Hunter_SniperShot","Hunter's Mark"],"sinister_strike":["Spell_Shadow_RitualOfSacrifice","Sinister Strike"],"eviscerate":["Ability_Rogue_Eviscerate","Eviscerate"],"blade_flurry":["Ability_Warrior_PunishingBlow","Blade Flurry"],"rupture":["Ability_Rogue_Rupture","Rupture"],"kidney_shot":["Ability_Rogue_KidneyShot","Kidney Shot"],"gouge":["Ability_Gouge","Gouge"],"ghostly_strike":["Spell_Shadow_Curse","Ghostly Strike"],"adrenaline_rush":["Spell_Shadow_ShadowWordDominate","Adrenaline Rush"],"backstab":["Ability_BackStab","Backstab"],"slice_and_dice":["Ability_Rogue_SliceDice","Slice and Dice"],"seal_fate":["Spell_Shadow_ChillTouch","Seal Fate"],"smite":["Spell_Holy_HolySmite","Smite"],"sw_pain":["Spell_Shadow_ShadowWordPain","Shadow Word: Pain"],"mind_blast":["Spell_Shadow_UnholyFrenzy","Mind Blast"],"holy_nova":["Spell_Holy_HolyNova","Holy Nova"],"pw_shield":["Spell_Holy_PowerWordShield","Power Word: Shield"],"renew":["Spell_Holy_Renew","Renew"],"holy_fire":["Spell_Holy_SearingLight","Holy Fire"],"mind_flay":["Spell_Shadow_SiphonMana","Mind Flay"],"psychic_scream":["Spell_Shadow_PsychicScream","Psychic Scream"],"devouring_plague":["Spell_Shadow_BlackPlague","Devouring Plague"],"lightwell":["Spell_Holy_SummonLightwell","Lightwell"],"lightning_bolt":["Spell_Nature_Lightning","Lightning Bolt"],"chain_lightning":["Spell_Nature_ChainLightning","Chain Lightning"],"earth_shock":["Spell_Nature_EarthShock","Earth Shock"],"flame_shock":["Spell_Fire_FlameShock","Flame Shock"],"frost_shock":["Spell_Frost_FrostShock","Frost Shock"],"lightning_shield":["Spell_Nature_LightningShield","Lightning Shield"],"magma_totem":["Spell_Fire_SelfDestruct","Magma Totem"],"searing_totem":["Spell_Fire_SearingTotem","Searing Totem"],"fire_nova":["Spell_Fire_SealOfFire","Fire Nova"],"healing_wave":["Spell_Nature_MagicImmunity","Healing Wave"],"call_of_flame":["Spell_Fire_Immolation","Call of Flame"],"fireball":["Spell_Fire_FlameBolt","Fireball"],"frostbolt":["Spell_Frost_FrostBolt02","Frostbolt"],"arcane_missiles":["Spell_Nature_StarFall","Arcane Missiles"],"frost_nova":["Spell_Frost_FrostNova","Frost Nova"],"arcane_explosion":["Spell_Nature_WispSplode","Arcane Explosion"],"blizzard":["Spell_Frost_IceStorm","Blizzard"],"flamestrike":["Spell_Fire_SelfDestruct","Flamestrike"],"fire_blast":["Spell_Fire_Fireball","Fire Blast"],"cone_of_cold":["Spell_Frost_Glacier","Cone of Cold"],"blast_wave":["Spell_Holy_Excorcism_02","Blast Wave"],"pyroblast":["Spell_Fire_Fireball02","Pyroblast"],"ice_barrier":["Spell_Ice_Lament","Ice Barrier"],"polymorph":["Spell_Nature_Polymorph","Polymorph"],"shadow_bolt":["Spell_Shadow_ShadowBolt","Shadow Bolt"],"corruption":["Spell_Shadow_AbominationExplosion","Corruption"],"immolate":["Spell_Fire_Immolation","Immolate"],"curse_of_agony":["Spell_Shadow_CurseOfSargeras","Curse of Agony"],"rain_of_fire":["Spell_Shadow_RainOfFire","Rain of Fire"],"hellfire":["Spell_Fire_Incinerate","Hellfire"],"death_coil":["Spell_Shadow_DeathCoil","Death Coil"],"searing_pain":["Spell_Fire_SoulBurn","Searing Pain"],"drain_life":["Spell_Shadow_LifeDrain02","Drain Life"],"fear":["Spell_Shadow_Possession","Fear"],"soul_fire":["Spell_Fire_Fireball02","Soulfire"],"wrath":["Spell_Nature_AbolishMagic","Wrath"],"moonfire":["Spell_Nature_StarFall","Moonfire"],"starfire":["Spell_Arcane_StarFire","Starfire"],"hurricane":["Spell_Nature_Cyclone","Hurricane"],"insect_swarm":["Spell_Nature_InsectSwarm","Insect Swarm"],"entangling_roots":["Spell_Nature_StrangleVines","Entangling Roots"],"rejuvenation":["Spell_Nature_Rejuvenation","Rejuvenation"],"regrowth":["Spell_Nature_ResistNature","Regrowth"],"thorns":["Spell_Nature_Thorns","Thorns"],"swipe":["INV_Misc_MonsterClaw_03","Swipe"],"shred":["Spell_Shadow_VampiricAura","Shred"],"faerie_fire":["Spell_Nature_FaerieFire","Faerie Fire"],"demonic_empowerment":["Spell_Nature_RemoveCurse","Demonic Empowerment"]};
+IC.tab={"90001":"INV_Shirt_GuildTabard_01","90002":"INV_Shirt_GuildTabard_01","90003":"INV_Shirt_GuildTabard_01","90004":"INV_Shirt_GuildTabard_01","90005":"INV_Shirt_GuildTabard_01","90006":"INV_Shirt_GuildTabard_01","90011":"INV_Shirt_GuildTabard_01","90012":"INV_Banner_02","90013":"INV_Shirt_GuildTabard_01","90014":"INV_Shirt_GuildTabard_01","90015":"INV_Shirt_GuildTabard_01","90016":"INV_Banner_02","90017":"INV_Shirt_GuildTabard_01","90018":"INV_Misc_TabardPVP_01","90019":"INV_Misc_TabardPVP_02","90020":"INV_Shirt_GuildTabard_01","90021":"INV_Shirt_GuildTabard_01","90022":"INV_Shirt_GuildTabard_01","90023":"INV_Misc_TabardPVP_03","90024":"INV_Misc_TabardPVP_04"};
+const TABACH={90025:"coop:odds"};
+const PETACH={"zulian_tiger":"feat:hakkar","drakonid":"feat:nefarian","eye_of_cthun":"feat:cthun","stitches":"feat:stitches","doomguard":"feat:kazzak","devilsaur":"feat:mosh","ogre":"feat:kovork","gordok":"feat:gordok","azure_whelp":"feat:azuregos","sapphiron":"feat:nou","ancient_protector":"coop:photosynthesis","herod":"coop:smoothie","nefarian":"coop:totemly","bigglesworth":"coop:end"};
+const COSM=[[90101,"Defias Bandana","INV_Misc_Bandana_03","feat:vancleef"],[90102,"Zul'Gurub Mask","INV_Mask_02","feat:hakkar"],[90103,"Gnomish Mind Control Cap","INV_Helmet_49","feat:cthun"],[90104,"Gnomish Goggles","INV_Helmet_47","feat:azuregos"],[90105,"Onyxia Scale Cloak","INV_Misc_Cape_05","feat:nefarian"],[90106,"Glacial Cloak","INV_Misc_Cape_Naxxramas_01","feat:nou"],[90107,"Dashing Scarlet Cloak","INV_Misc_Cape_08","feat:herod"],[90108,"Admiral's Hat","INV_Helmet_29","coop:together"],[90109,"Bloodsail Admiral's Hat","INV_Helmet_66","coop:fiveofakind"],[90110,"Cape of the Brotherhood","INV_Misc_Cape_08","coop:brotherhood"],[90111,"Embrace of the Lycan","Ability_Mount_WhiteDireWolf","coop:bump"],[90112,"Whitemane's Chapeau","INV_Helmet_12","coop:holyframe"],[90113,"Cloak of the Brood Lord","INV_Misc_Cape_20","coop:dragonslayers"],[90114,"Cloak of the Devoured","INV_Misc_Cape_18","coop:oldgods"]];
+const TAB_ICON="INV_Shirt_GuildTabard_01";
+$("brand").innerHTML=ico("INV_Misc_Book_09");$("bigico").outerHTML=ico("INV_Misc_Note_01","big");
+
+
+const ACHS=[["class:warrior","Warrior Victorious","Win a run with a Warrior.","class:warrior","Classes"],["class:paladin","Paladin Victorious","Win a run with a Paladin.","class:paladin","Classes"],["class:hunter","Hunter Victorious","Win a run with a Hunter.","class:hunter","Classes"],["class:rogue","Rogue Victorious","Win a run with a Rogue.","class:rogue","Classes"],["class:priest","Priest Victorious","Win a run with a Priest.","class:priest","Classes"],["class:shaman","Shaman Victorious","Win a run with a Shaman.","class:shaman","Classes"],["class:mage","Mage Victorious","Win a run with a Mage.","class:mage","Classes"],["class:warlock","Warlock Victorious","Win a run with a Warlock.","class:warlock","Classes"],["class:druid","Druid Victorious","Win a run with a Druid.","class:druid","Classes"],["classlast:warrior","Warrior of the Scarab Wall","Defeat the last boss with a Warrior.","class:warrior","Classes"],["classlast:paladin","Paladin of the Scarab Wall","Defeat the last boss with a Paladin.","class:paladin","Classes"],["classlast:hunter","Hunter of the Scarab Wall","Defeat the last boss with a Hunter.","class:hunter","Classes"],["classlast:rogue","Rogue of the Scarab Wall","Defeat the last boss with a Rogue.","class:rogue","Classes"],["classlast:priest","Priest of the Scarab Wall","Defeat the last boss with a Priest.","class:priest","Classes"],["classlast:shaman","Shaman of the Scarab Wall","Defeat the last boss with a Shaman.","class:shaman","Classes"],["classlast:mage","Mage of the Scarab Wall","Defeat the last boss with a Mage.","class:mage","Classes"],["classlast:warlock","Warlock of the Scarab Wall","Defeat the last boss with a Warlock.","class:warlock","Classes"],["classlast:druid","Druid of the Scarab Wall","Defeat the last boss with a Druid.","class:druid","Classes"],["zone:elwynn","Elwynn Forest","Defeat the final boss in Elwynn Forest with any class.","INV_Misc_Bandana_03","Zones"],["zone:duskwood","Duskwood","Defeat the final boss in Duskwood with any class.","Spell_Shadow_RaiseDead","Zones"],["zone:wsg","Warsong Gulch","Defeat the final boss in Warsong Gulch with any class.","INV_BannerPVP_02","Zones"],["zone:ungoro","Un'Goro Crater","Defeat the final boss in Un'Goro Crater with any class.","Ability_Hunter_Pet_Raptor","Zones"],["zone:ab","Arathi Basin","Defeat the final boss in Arathi Basin with any class.","INV_Misc_Head_Troll_02","Zones"],["zone:feralas","Feralas","Defeat the final boss in Feralas with any class.","Ability_Warrior_SavageBlow","Zones"],["zone:arena","Gurubashi Arena","Defeat the final boss in Gurubashi Arena with any class.","INV_Misc_Head_Troll_01","Zones"],["zone:sm","Scarlet Monastery","Defeat the final boss in Scarlet Monastery with any class.","Spell_Holy_HolySmite","Zones"],["zone:av","Alterac Valley","Defeat the final boss in Alterac Valley with any class.","INV_Misc_Head_Dragon_Blue","Zones"],["zone:brm","Blackrock Mountain","Defeat the final boss in Blackrock Mountain with any class.","INV_Misc_Head_Dragon_Black","Zones"],["zone:aq","Gates of Ahn'Qiraj","Defeat the final boss in Gates of Ahn'Qiraj with any class.","INV_Misc_AhnQirajTrinket_01","Zones"],["zone:naxx","Naxxramas","Defeat the final boss in Naxxramas with any class.","INV_Misc_Head_Scourge_01","Zones"],["zone9:elwynn","Champion of Elwynn Forest","Defeat the final boss in Elwynn Forest with all nine classes.","INV_Misc_Bandana_03","Zones"],["zone9:duskwood","Champion of Duskwood","Defeat the final boss in Duskwood with all nine classes.","Spell_Shadow_RaiseDead","Zones"],["zone9:wsg","Champion of Warsong Gulch","Defeat the final boss in Warsong Gulch with all nine classes.","INV_BannerPVP_02","Zones"],["zone9:ungoro","Champion of Un'Goro Crater","Defeat the final boss in Un'Goro Crater with all nine classes.","Ability_Hunter_Pet_Raptor","Zones"],["zone9:ab","Champion of Arathi Basin","Defeat the final boss in Arathi Basin with all nine classes.","INV_Misc_Head_Troll_02","Zones"],["zone9:feralas","Champion of Feralas","Defeat the final boss in Feralas with all nine classes.","Ability_Warrior_SavageBlow","Zones"],["zone9:arena","Champion of Gurubashi Arena","Defeat the final boss in Gurubashi Arena with all nine classes.","INV_Misc_Head_Troll_01","Zones"],["zone9:sm","Champion of Scarlet Monastery","Defeat the final boss in Scarlet Monastery with all nine classes.","Spell_Holy_HolySmite","Zones"],["zone9:av","Champion of Alterac Valley","Defeat the final boss in Alterac Valley with all nine classes.","INV_Misc_Head_Dragon_Blue","Zones"],["zone9:brm","Champion of Blackrock Mountain","Defeat the final boss in Blackrock Mountain with all nine classes.","INV_Misc_Head_Dragon_Black","Zones"],["zone9:aq","Champion of Gates of Ahn'Qiraj","Defeat the final boss in Gates of Ahn'Qiraj with all nine classes.","INV_Misc_AhnQirajTrinket_01","Zones"],["zone9:naxx","Champion of Naxxramas","Defeat the final boss in Naxxramas with all nine classes.","INV_Misc_Head_Scourge_01","Zones"],["feat:kills2500","Slaughterhouse","Slay 2,500 enemies in one run.","Ability_Whirlwind","Feats"],["feat:kills6000","Carnage","Slay 6,000 enemies in one run.","Spell_Shadow_DeathScream","Feats"],["feat:lairs","Lair Breaker","Slay four guardians before 8:00 in one run.","Ability_Hunter_Pet_Bear","Feats"],["feat:endless25","Overtime","Survive to 25:00 in endless mode.","INV_Misc_PocketWatch_01","Feats"],["feat:endless30","Unending","Survive to 30:00 in endless mode.","INV_Misc_PocketWatch_02","Feats"],["feat:endless40","Deathless Hour","Survive to 40:00 in endless mode.","Spell_Nature_TimeStop","Feats"],["feat:bare","Bare Knuckles","Win a run wearing no gear.","INV_Shirt_White_01","Feats"],["feat:thrifty","Thrifty","Win a run without buying a cache.","INV_Box_01","Feats"],["feat:odds","Against the Odds","Win a run on Heroic III or harder.","Spell_Holy_DivineIntervention","Feats"],["feat:nou","no u","Slay Sapphiron with a Frostbolt as the killing blow.","Spell_Frost_FrostBolt02","Feats"],["feat:herod","Spin to Win","Defeat Herod with Whirlwind.","INV_Misc_Cape_08","Feats"],["feat:hakkar","Suck It, Hakkar!","Defeat Hakkar with Drain Life.","INV_Mask_02","Feats"],["feat:nefarian","Bad Dragon!","Have a summoned pet deliver the killing blow to Nefarian.","INV_Misc_Cape_05","Feats"],["feat:cthun","Eye Caramba!","Defeat C'Thun without taking any damage from him.","INV_Helmet_49","Feats"],["feat:vancleef","You're Fired","Defeat Edwin VanCleef with a Fire spell.","INV_Misc_Bandana_03","Feats"],["feat:stitches","Stitches Get Stitches","Defeat Stitches with a Bleed effect.","Spell_Shadow_RaiseDead","Feats"],["feat:kazzak","Not Today, Satan","Defeat Lord Kazzak with Holy damage.","Spell_Shadow_AntiMagicShell","Feats"],["feat:mosh","Clever Girl","Have a summoned pet deliver the killing blow to King Mosh.","Ability_Hunter_Pet_Raptor","Feats"],["feat:kovork","Bonk the Bonker","Defeat Kovork with a melee attack.","Ability_Hunter_Pet_Gorilla","Feats"],["feat:gordok","Stop Hitting Yourself","Defeat King Gordok with reflected damage from Shaman's Lightning Shield, Druid's Thorns, or Paladin's Holy Shield.","INV_Crown_01","Feats"],["feat:azuregos","Blue Screen of Death","Defeat Azuregos with an Arcane spell.","INV_Helmet_47","Feats"],["feat:unpolished","Unpolished","Beat Heroic II or harder with no piece of gear above 0 stars.","INV_Gauntlets_04","Feats"],["feat:endless3","Overtime","Slay 3 bosses in endless in one run.","Spell_Holy_BorrowedTime","Feats"],["feat:endless6","Never Ending","Slay 6 bosses in endless in one run.","Spell_Nature_TimeStop","Feats"],["feat:marks100","Hazard Pay","Earn 100 marks in one run.","INV_Misc_Coin_04","Feats"],["feat:bossmarks50","Danger Money","Earn 50 marks from one boss.","INV_Misc_Coin_03","Feats"],["count:kills10k","Exterminator","Slay 10,000 enemies.","INV_Sword_04","Lifetime"],["count:kills100k","Scourge of Azeroth","Slay 100,000 enemies.","INV_Sword_27","Lifetime"],["count:kills1m","A Million Dead","Slay 1,000,000 enemies.","Spell_Shadow_RaiseDead","Lifetime"],["count:gold5k","Pocket Change","Collect 5,000 gold.","INV_Misc_Coin_02","Lifetime"],["count:gold50k","Treasure Hunter","Collect 50,000 gold.","INV_Misc_Coin_01","Lifetime"],["count:guardians100","Lair Raider","Slay 100 guardians.","Ability_Hunter_Pet_Wolf","Lifetime"],["count:guardians500","Warden's Bane","Slay 500 guardians.","Ability_Hunter_Pet_Gorilla","Lifetime"],["count:bosses100","Boss Hunter","Slay 100 bosses.","INV_Misc_Head_Dragon_01","Lifetime"],["count:caches100","Cache Cracker","Buy 100 caches.","INV_Box_02","Lifetime"],["count:runs10","Regular","Play 10 runs.","INV_Misc_Note_01","Lifetime"],["count:runs100","Veteran","Play 100 runs.","INV_Misc_Book_09","Lifetime"],["count:wins50","Conqueror","Win 50 runs.","INV_BannerPVP_01","Lifetime"],["count:marks100","Marked","Earn 100 marks.","INV_Misc_Coin_05","Lifetime"],["count:marks1k","Well Paid","Earn 1,000 marks.","INV_Misc_Coin_06","Lifetime"],["count:marks10k","Quartermaster","Earn 10,000 marks.","INV_Misc_Coin_01","Lifetime"],["talents:1","Fully Talented","Earn all talent points with one class.","INV_Misc_Book_11","Collection"],["talents:9","Master of All","Earn all talent points with every class.","INV_Misc_Book_07","Collection"],["pieces:25","Collector","Collect 25 pieces of gear, of any class.","INV_Chest_Chain","Collection"],["pieces:100","Hoarder","Collect 100 pieces of gear, of any class.","INV_Chest_Plate16","Collection"],["pieces:250","Curator","Collect 250 pieces of gear, of any class.","INV_Helmet_08","Collection"],["pieces:all","The Whole Armory","Collect every piece of gear of every class.","INV_Helmet_74","Collection"],["legendaryset","Legendary","Collect every legendary piece of one class.","INV_Sword_39","Collection"],["codex:10","Codex: 10 entries","See 10 of the codex's rings, trinkets and amulets.","INV_Jewelry_Ring_15","Collection"],["codex:50","Jeweler's Eye","See half of the codex's rings, trinkets and amulets.","INV_Jewelry_Ring_15","Collection"],["codex:100","Every Bauble","See every ring, trinket and amulet in the codex.","INV_Jewelry_Necklace_AhnQiraj_02","Collection"],["stars:1","Polished","Upgrade a piece of gear to 1 star.","INV_Misc_Gem_Variety_01","Collection"],["stars:3","Honed","Upgrade a piece of gear to 3 stars.","INV_Misc_Gem_Variety_02","Collection"],["stars:4","Beyond the Vault","Upgrade a piece of gear to 4 stars.","INV_Misc_Gem_Diamond_01","Collection"],["stars:5","Five Stars","Upgrade a piece of gear to 5 stars.","INV_Misc_Gem_Diamond_02","Collection"],["setbonus","Matched","Open a set bonus: four armor pieces of one set at 1 star or more.","INV_Chest_Chain_15","Collection"],["sharedset","Shared Wisdom","Have one set's eight armor pieces at 1 star or more on every class.","INV_Chest_Chain_15","Collection"],["set8","Suited Up","Open an 8-piece set bonus: one set's eight armor pieces at 3 stars or more.","INV_Chest_Plate03","Collection"],["wardrobe","Wardrobe","Open the 8-piece bonus of all six sets with one class.","INV_Chest_Cloth_23","Collection"],["armoryoflegends","Armory of Legends","Open the legendary set's 8-piece bonus with every class.","INV_Chest_Plate02","Collection"],["feat:humble","Humble Beginnings","Beat a zone wearing a common set's 8-piece bonus.","INV_Shirt_05","Collection"],["empowered","Empowered","Empower an 8-piece set bonus: one set's eight armor pieces at 5 stars.","INV_Chest_Plate02","Collection"],["radiantarmory","Radiant Armory","Empower an 8-piece set bonus with every class. Opens the Fiery Weapon glow.","Spell_Fire_SealOfFire","Collection"],["coop:together","Better Together","Complete your first zone with at least one other player.","Spell_Holy_PrayerOfHealing02","Co-op"],["coop:fiveofakind","Five of a Kind","Complete any zone in co-op with all 5 players using the same class.","Spell_Holy_PowerInfusion","Co-op"],["coop:photosynthesis","Rest in Photosynthesis","Defeat Kel'Thuzad on Heroic III in co-op with 5 Druids, all talented into Tranquility. Tranquility must deliver the killing blow.","Spell_Nature_Tranquility","Co-op"],["coop:odds","Against All Odds","Complete any zone on Heroic III or harder with at least one other player.","Spell_Holy_DivineIntervention","Co-op"],["coop:brotherhood","The Brotherhood Falls","Defeat Edwin VanCleef in co-op with 5 players, all using different classes.","INV_Misc_Bandana_03","Co-op"],["coop:bump","Things That Go Bump in the Night","Complete Duskwood with at least one other player, without any player dying.","Ability_Mount_BlackDireWolf","Co-op"],["coop:team","For the Team","Complete Warsong Gulch and Arathi Basin, each with at least one other player.","INV_BannerPVP_02","Co-op"],["coop:jurassic","Jurassic Pack","Complete Un'Goro Crater in co-op with 5 Hunters.","Ability_Hunter_Pet_Raptor","Co-op"],["coop:smoothie","Hakkar Smoothie","Defeat Hakkar with 5 Warriors, all talented into Bladestorm. Whirlwind must deliver the killing blow.","Ability_Whirlwind","Co-op"],["coop:holyframe","Holy Frame Drops","Defeat High Inquisitor Whitemane in co-op with 5 Paladins, all having Consecration as their highest-ranked spell. Consecration must deliver the killing blow.","Spell_Holy_InnerFire","Co-op"],["coop:dragonslayers","Dragonslayers","Defeat Azuregos and Nefarian, each with at least one other player.","INV_Misc_Head_Dragon_Blue","Co-op"],["coop:totemly","Totem'ly Balanced","Defeat Nefarian in co-op with 5 Shamans, all having Magma Totem as their highest-ranked spell. Magma Totem must deliver the killing blow.","Spell_Fire_SelfDestruct","Co-op"],["coop:oldgods","The Old Gods Have No Friends","Defeat C'Thun on Heroic III or harder with at least one other player.","INV_Misc_AhnQirajTrinket_01","Co-op"],["coop:end","Together, To the End","Complete all 12 zones, each with at least one other player, across any number of runs.","INV_Misc_Head_Scourge_01","Co-op"],["coop:insane","The Insane","Survive for 40 minutes or longer in Naxxramas on Heroic V with at least two other players. Opens the Unholy Weapon glow.","Spell_Shadow_UnholyFrenzy","Co-op"],["coop:matching","Matching Outfits","Win in a party of three or more, every hero wearing the same set's 8-piece bonus.","INV_Shirt_GuildTabard_01","Co-op"],["coop:raidnight","Raid Night","Beat Heroic III or harder in a party of five.","INV_Misc_Head_Dragon_Black","Co-op"],["heroic:1","Heroic Debut","Beat Heroic I in any zone.","Ability_Warrior_BattleShout","Heroic"],["heroic:3","Heroic Resolve","Beat Heroic III in any zone.","Ability_Warrior_DefensiveStance","Heroic"],["heroic:all3","Heroic Across Azeroth","Beat Heroic III in every zone, with any classes.","INV_Misc_Map_01","Heroic"],["heroic:naxx5","Champion of Naxxramas","Beat Heroic V in Naxxramas. Opens the Crusader weapon glow.","INV_Misc_Head_Scourge_01","Heroic"]];
+let achCat="All";
+const achSet=()=>{const i=find("ach");return new Set(i>=0?(L[i].split("|")[1]||"").split(",").filter(Boolean):[])};
+function putAch(set){const ti=find("achat"),at=new Map(ti>=0?(L[ti].split("|")[1]||"").split(",").filter(Boolean).map(x=>x.split("=")):[]);const now=String(Math.floor(Date.now()/1000));
+  [...set].forEach(a=>{if(!at.has(a))at.set(a,now)});[...at.keys()].forEach(a=>{if(!set.has(a))at.delete(a)});
+  if(set.size){setLine("ach",undefined,[...set].sort().join(","));setLine("achat",undefined,[...at].map(([k,v])=>k+"="+v).sort().join(","))}else{removeLine("ach");removeLine("achat")}}
+function achIcon(i){return /^class:/.test(i)?clsIco(Object.keys(CLS_KEY).find(k=>CLS_KEY[k]===i.slice(6))):ico(i)}
+function renderAch(){
+  const cats=["All","Zones","Classes","Collection","Feats","Lifetime","Co-op","Heroic"],have=achSet();
+  $("achchips").innerHTML=cats.map(c=>`<button class="chip" data-c="${c}" aria-pressed="${c===achCat}">${c}</button>`).join("");
+  $("achchips").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{achCat=b.dataset.c;renderAch()}));
+  const shown=ACHS.filter(a=>achCat==="All"||a[4]===achCat);
+  $("achlist").innerHTML=shown.map(([id,t,d,ic])=>`<label class="ach${have.has(id)?" on":""}" data-id="${id}">${achIcon(ic)}<div><b>${t}</b><span>${d}</span></div><input type="checkbox"${have.has(id)?" checked":""}></label>`).join("");
+  $("achcount").textContent=ACHS.filter(a=>have.has(a[0])).length+" of "+ACHS.length+" achievements unlocked"+(achCat==="All"?"":" ("+shown.filter(a=>have.has(a[0])).length+" of "+shown.length+" in "+achCat+")");
+  $("achlist").querySelectorAll("label").forEach(l=>l.querySelector("input").addEventListener("change",e=>{const s=achSet();e.target.checked?s.add(l.dataset.id):s.delete(l.dataset.id);putAch(s);renderAch();syncRaw()}));
+  const bulk=on=>{const s=achSet();shown.forEach(a=>on?s.add(a[0]):s.delete(a[0]));putAch(s);renderAch();syncRaw()};
+  $("achSel").onclick=()=>bulk(true);$("achClr").onclick=()=>bulk(false);
+}
+
+
+const GEAR={"s":{"warrior":["Recruit's","Valor","Might","Wrath","Dreadnaught"],"paladin":["Squire's","Lightforge","Lawbringer","Judgement","Redemption"],"hunter":["Tracker's","Beaststalker's","Giantstalker's","Dragonstalker's","Cryptstalker"],"rogue":["Footpad's","Shadowcraft","Nightslayer","Bloodfang","Bonescythe"],"priest":["Acolyte's","Devout","Prophecy","Transcendence","Faith"],"shaman":["Primal","Elements","Earthfury","Ten Storms","Earthshatter"],"mage":["Apprentice's","Magister's","Arcanist","Netherwind","Frostfire"],"warlock":["Novice's","Dreadmist","Felheart","Nemesis","Plagueheart"],"druid":["Thicket","Wildheart","Cenarion","Stormrage","Dreamwalker"]},"n":{"cloth":["Circlet","Mantle","Robes","Belt","Leggings","Boots","Bindings","Gloves"],"leather":["Cover","Spaulders","Chestpiece","Belt","Pants","Boots","Bracers","Gloves"],"mail":["Helm","Spaulders","Breastplate","Belt","Legguards","Greaves","Bracers","Gauntlets"],"plate":["Helm","Pauldrons","Breastplate","Girdle","Legplates","Sabatons","Bracers","Gauntlets"]},"w":{"warrior":[["Worn Claymore","Bastard Sword of Valor","Blackhand Doomsaw","Ravager's Greatblade","Sulfuras, Hand of Ragnaros"]],"paladin":[["Wooden Maul","Hammer of the Squire","Hammer of the Lightforge","Lightforged Hammer","Ashbringer"]],"hunter":[["Short Bow","Hunting Bow of the Wilds","Bow of the Dragonflight","Ahn'Qiraj Rifle","Rhok'delar, Longbow of the Ancient Keepers"]],"rogue":[["Worn Dagger","Assassin's Blade","Shadowcraft Dirk","Blackwing Shiv","Thunderfury, Blessed Blade of the Windseeker"],["Rusty Shiv","Thief's Blade","Nightslayer Kris","Fang of the Faceless","Kingsfall"]],"priest":[["Acolyte's Staff","Staff of the Devout","Staff of Prophecy","Benediction","Anathema"]],"shaman":[["Spiked Club","Mace of the Elements","Earthfury Hammer","Blackwing Mace","Doomhammer"],["Round Buckler","Crested Shield","Totem Shield","Aegis of the Ten Storms","Shield of the Earthshatter"]],"mage":[["Apprentice's Staff","Magister's Staff","Arcanist's Staff","Staff of Dominance","Atiesh, Greatstaff of the Guardian"]],"warlock":[["Novice's Staff","Dreadmist Staff","Felheart Staff","Staff of the Shadow Flame","Atiesh, Greatstaff of the Guardian"]],"druid":[["Gnarled Staff","Wildheart Staff","Cenarion Staff","Staff of the Moon","Atiesh, Greatstaff of the Guardian"]]},"at":{"warrior":"plate","paladin":"plate","hunter":"mail","shaman":"mail","rogue":"leather","druid":"leather","priest":"cloth","mage":"cloth","warlock":"cloth"},"r":["Common","Uncommon","Rare","Epic","Legendary","PvP"],"pw":{"warrior":["Grand Marshal's Claymore","High Warlord's Greatsword"],"paladin":["Grand Marshal's Demolisher",null],"hunter":["Grand Marshal's Bullseye","High Warlord's Recurve"],"rogue":["Grand Marshal's Dirk","High Warlord's Razor"],"mage":["Grand Marshal's Mageblade","High Warlord's Spellblade"],"priest":["Grand Marshal's Stave","High Warlord's War Staff"],"warlock":["Grand Marshal's Stave","High Warlord's War Staff"],"druid":["Grand Marshal's Stave","High Warlord's War Staff"],"shaman":[null,"High Warlord's Battle Mace"]}};
+const TCOL=["#9d9d9d","#1eff00","#0070dd","#a335ee","#ff8000","#e6403b"];
+const TIER_ORDER=[0,1,2,3,5,4]; // Common, Uncommon, Rare, Epic, PvP, Legendary
+const SLOT_NAMES=["Head","Shoulders","Chest","Waist","Legs","Feet","Wrists","Hands","Main hand","Off hand"];
+const GL=["M5 14a7 7 0 0 1 14 0v4h-3v-3H8v3H5z","M3 15c0-5 4-8 9-8s9 3 9 8l-3 2c-1-3-3-5-6-5s-5 2-6 5z","M7 4l5 2 5-2 4 4-3 3v9H6v-9L3 8z","M3 10h18v5H3zM10 9h4v7h-4z","M7 3h10l1 18h-5l-1-9-1 9H6z","M8 3h6v9l5 3v5H6v-5l2-1z","M6 8h12v8H6z","M7 11V6l2 1v3l1-6 2 1v5l1-4 2 1v6l2-1v5l-3 4H9z","M19 3l2 2-9 9-3 1 1-3zM8 16l-3 3 2 2 3-3","M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z"];
+const glyph=s=>`<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${GL[s]}"/></svg>`;
+function hasSlot(c,s){return s<=8||(s===9&&OFFHAND.includes(+c))}
+function ownedItems(){const i=find("items");return new Set(i>=0?(L[i].split("|")[1]||"").split(",").filter(Boolean).map(Number):[])}
+function starMap(){const i=find("stars"),m={};if(i>=0)(L[i].split("|")[1]||"").split(",").filter(Boolean).forEach(x=>{const [k,v]=x.split(":");m[+k]=+v});return m}
+function putStars(m){const s=Object.keys(m).map(Number).filter(k=>m[k]>0).sort((a,b)=>a-b).map(k=>k+":"+m[k]).join(",");if(s)setLine("stars",undefined,s);else removeLine("stars")}
+function putItems(set){setLine("items",undefined,[...set].sort((a,b)=>a-b).join(","));
+  const m=starMap(),ks=Object.keys(m).map(Number);if(ks.some(k=>!set.has(k))){ks.forEach(k=>{if(!set.has(k))delete m[k]});putStars(m)}} // stars only exist on owned gear
+function maxStars(classes,lvl){const o=ownedItems(),m=starMap();o.forEach(i=>{if(classes.includes(Math.floor(i/1000)%100))m[i]=lvl});putStars(m)}
+function gearInfo(c,s,t){const k=CLS_KEY[c],ty=GEAR.at[k],r=GEAR.r[t];
+  if(s<8){const n=GEAR.n[ty][s];return t===5?["PvP "+n,"Field Marshal's / Warlord's"]:[GEAR.s[k][t]+" "+n,r]}
+  if(t===5){const w=GEAR.pw[k]||[];const nm=s===8?[w[0],w[1]].filter(Boolean).join(" / "):(+c===7?"High Warlord's Shield Wall":"PvP off-hand");return [nm||"PvP weapon","PvP"]}
+  return [((GEAR.w[k]||[])[s-8]||[])[t]||"",r]}
+function renderGear(){
+  const ids=classIds(); if(hcls===null||!ids.includes(hcls)) hcls=ids[0];
+  $("clsbar2").innerHTML=ids.map(c=>`<button class="clsbtn" data-c="${c}" aria-pressed="${c===hcls}">${clsIco(c)}<span>${CLASS_NAMES[c]}</span></button>`).join("");
+  $("clsbar2").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{hcls=+b.dataset.c;renderHeroes();renderGear()}));
+  const own=ownedItems(), SM=starMap(), slots=[...Array(10).keys()].filter(s=>hasSlot(hcls,s));
+  let out='<div class="gtiers"><span class="meta">Toggle a whole tier:</span>'+TIER_ORDER.map(t=>`<button class="gtier" data-ht="${t}" style="--tc:${TCOL[t]}">${GEAR.r[t]}</button>`).join("")+'</div>';
+  out+=slots.map(s=>`<section class="gslot"><h3 data-hs="${s}">${SLOT_NAMES[s]}<small>toggle row</small></h3><div class="gtiles">`+TIER_ORDER.map(t=>{
+    const id=gearId(hcls,s,t),[nm,sub]=gearInfo(hcls,s,t);
+    return `<div class="gt${own.has(id)?" on":""}" data-id="${id}" style="--tc:${TCOL[t]}" role="button" tabindex="0" aria-pressed="${own.has(id)}">${glyph(s)}<div class="gn"><b>${nm}</b><span>${sub}</span>${own.has(id)?`<select class="st" data-sid="${id}" aria-label="Stars">${[0,1,2,3,4,5].map(v=>`<option value="${v}"${(SM[id]||0)===v?" selected":""}>${v} \u2605</option>`).join("")}</select>`:""}</div><i class="ck">\u2713</i></div>`}).join("")+'</div></section>').join("");
+  $("gearbox").innerHTML=out;
+  const slotIds=f=>{const r=[];slots.forEach(s=>[0,1,2,3,4,5].forEach(t=>{if(f(s,t))r.push(gearId(hcls,s,t))}));return r};
+  const flip=ids=>{const o=ownedItems(),all=ids.every(i=>o.has(i));ids.forEach(i=>all?o.delete(i):o.add(i));ensureHero(hcls);putItems(o);renderGear();syncRaw()};
+  $("gearbox").querySelectorAll(".gt").forEach(e=>{const go=()=>flip([+e.dataset.id]);e.addEventListener("click",go);e.addEventListener("keydown",k=>{if(k.key==="Enter"||k.key===" "){k.preventDefault();go()}})});
+  $("gearbox").querySelectorAll("select.st").forEach(s=>{["click","keydown"].forEach(ev=>s.addEventListener(ev,e=>e.stopPropagation()));
+    s.addEventListener("change",()=>{const m=starMap();m[+s.dataset.sid]=+s.value;putStars(m);renderGear();syncRaw()})});
+  $("gearbox").querySelectorAll(".gtier").forEach(e=>e.addEventListener("click",()=>flip(slotIds((s,t)=>t===+e.dataset.ht))));
+  $("gearbox").querySelectorAll("h3").forEach(e=>e.addEventListener("click",()=>flip(slotIds((s,t)=>s===+e.dataset.hs))));
+}
+
+/* ---------- wiring ---------- */
+const drop=$("loader"), fileInput=$("file");
+drop.addEventListener("click",()=>fileInput.click());
+drop.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();fileInput.click()}});
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over")}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over")}));
+drop.addEventListener("drop",e=>{const f=e.dataTransfer.files[0]; if(f) readFile(f)});
+fileInput.addEventListener("change",()=>{if(fileInput.files[0]) readFile(fileInput.files[0])});
+function readFile(f){const r=new FileReader();r.onload=()=>openText(r.result,f.name);r.readAsText(f)}
+
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",x===b));
+  ["basic","zones","heroic","perks","heroes","gear","ach","coll","codex","raw"].forEach(t=>$("tab-"+t).classList.toggle("hide",t!==b.dataset.tab));
+}));
+$("clearAll").addEventListener("click",()=>{classIds().forEach(c=>setCleared(c,ZONES.length));render()});
+$("applyRaw").addEventListener("click",()=>{
+  L=$("raw").value.replace(/\r\n/g,'\n').split('\n'); const pr=validate();
+  $("rawMsg").textContent=pr.length?pr[0]:"Applied."; render();
+});
+$("save").addEventListener("click",download);
+$("reload").addEventListener("click",()=>{$("editor").classList.add("hide");$("loader").classList.remove("hide");fileInput.value="";$("hint").textContent=""});
+</script>
+</body>
+</html>

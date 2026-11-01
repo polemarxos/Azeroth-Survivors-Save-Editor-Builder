@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>AzsEditorBuilder</RootNamespace>
+    <AssemblyName>AzsEditorBuilder</AssemblyName>
+    <StartupObject>AzsEditorBuilder.Program</StartupObject>
+    <MyType>WindowsFormsWithCustomSubMain</MyType>
+    <OptionStrict>On</OptionStrict>
+    <OptionInfer>On</OptionInfer>
+    <OptionExplicit>On</OptionExplicit>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <Version>1.0.0</Version>
+    <Product>Azeroth Survivors Save Editor Builder</Product>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <!-- app.ico = the Azeroth Survivors icon, copied from the game by build.bat -->
+    <ApplicationIcon Condition="Exists('app.ico')">app.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The save editor page the builder starts from (replace it with a newer index.html any time) -->
+    <EmbeddedResource Include="template\index.html" LogicalName="AzsEditorBuilder.template.index.html" />
+    <EmbeddedResource Include="app.ico" Condition="Exists('app.ico')" LogicalName="AzsEditorBuilder.app.ico" />
+    <Compile Remove="tools\**" />
+    <None Remove="tools\**" />
+  </ItemGroup>
+
+</Project>
