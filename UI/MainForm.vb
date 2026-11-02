@@ -18,6 +18,7 @@ Namespace UI
         Private ReadOnly txtExe As New TextBox()
         Private ReadOnly txtSave As New TextBox()
         Private ReadOnly txtTemplate As New TextBox()
+        Private ReadOnly txtWow As New TextBox()
         Private ReadOnly lblTemplate As New Label()
         Private ReadOnly btnScan As New Button()
         Private ReadOnly prog As New ProgressBar()
@@ -63,6 +64,7 @@ Namespace UI
             txtExe.Text = cfg.ExePath
             txtSave.Text = cfg.SavePath
             txtTemplate.Text = cfg.TemplatePath
+            txtWow.Text = cfg.WowPath
             txtOut.Text = If(String.IsNullOrWhiteSpace(cfg.OutDir), Settings.DefaultOutDir, cfg.OutDir)
             chkOpen.Checked = cfg.OpenAfterBuild
             UpdateTemplateLabel()
@@ -103,6 +105,7 @@ Namespace UI
             cfg.ExePath = txtExe.Text.Trim()
             cfg.SavePath = txtSave.Text.Trim()
             cfg.TemplatePath = txtTemplate.Text.Trim()
+            cfg.WowPath = txtWow.Text.Trim()
             cfg.OutDir = txtOut.Text.Trim()
             cfg.OpenAfterBuild = chkOpen.Checked
             cfg.Save()
@@ -179,6 +182,13 @@ Namespace UI
             FileRow(t, "Save (optional):", txtSave, Btn("Browse...", Sub() PickFile(txtSave, "Azeroth Survivors save|*.sav;*.txt|All files|*.*")),
                     Btn("Clear", Sub() txtSave.Text = ""))
             SpanRow(t, Hint("A save made by this version of the game lets the builder confirm the save seal key. Without one, a changed key can only be guessed."))
+            FileRow(t, "WoW folder (optional):", txtWow, Btn("Browse...", Sub()
+                                                                      Using d As New FolderBrowserDialog With {.Description = "Your World of Warcraft 1.12 folder (the one with the Data folder)"}
+                                                                          If d.ShowDialog(Me) = DialogResult.OK Then txtWow.Text = d.SelectedPath
+                                                                      End Using
+                                                                  End Sub), Btn("Clear", Sub() txtWow.Text = ""))
+            SpanRow(t, Hint("Not needed: gear icons come from the game's display ids and the icon list built into this program. " &
+                            "Only if a future update adds gear newer than that list, your WoW 1.12 folder can fill in the missing icons."))
             FileRow(t, "Editor to update:", txtTemplate, Btn("Browse...", Sub()
                                                                                PickFile(txtTemplate, "Save editor page|index.html;*.html;*.htm|All files|*.*")
                                                                                UpdateTemplateLabel()
@@ -279,10 +289,11 @@ Namespace UI
             txtLog.Clear()
             Log("Editor: " & template.VersionLabel())
             Dim tpl = template
+            Dim wowDir = txtWow.Text.Trim()
             Try
                 Dim result = Await Task.Run(Function()
                                                 Dim known = KnownData.FromTemplate(tpl)
-                                                Dim sc As New ExeScanner(AddressOf Log)
+                                                Dim sc As New ExeScanner(AddressOf Log) With {.WowFolder = wowDir}
                                                 sc.Load(exe)
                                                 Dim saveText = If(savePath <> "", File.ReadAllText(savePath), Nothing)
                                                 Dim key = sc.FindKey(known.Seal, saveText)
@@ -298,11 +309,12 @@ Namespace UI
                         .Include = keyResult.Verified, .Notes = keyResult.Note})
                 End If
                 Dim nNew = allFindings.Where(Function(f) f.Status = FindStatus.New).Count()
+                Dim nChg = allFindings.Where(Function(f) f.Status = FindStatus.Changed).Count()
                 Dim nMiss = allFindings.Where(Function(f) f.Status = FindStatus.Missing).Count()
                 Log("")
-                Log($"Done: {nNew} new, {nMiss} missing. Check them on the Review tab, then build on the Build tab.")
+                Log($"Done: {nNew} new, {nChg} changed, {nMiss} missing. Check them on the Review tab, then build on the Build tab.")
                 FillGrid()
-                If nNew + nMiss > 0 Then tabs.SelectedIndex = 1
+                If nNew + nChg + nMiss > 0 Then tabs.SelectedIndex = 1
             Catch ex As Exception
                 Log("Scan failed: " & ex.Message)
                 MessageBox.Show(Me, "Scan failed:" & vbCrLf & ex.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -329,13 +341,13 @@ Namespace UI
         Private Function BuildReviewTab() As TabPage
             Dim page As New TabPage("2. Review changes")
             Dim top As New FlowLayoutPanel With {.Dock = DockStyle.Top, .AutoSize = True, .Padding = New Padding(6)}
-            chkNewOnly.Text = "Show only new"
+            chkNewOnly.Text = "Show only new and changed"
             chkNewOnly.AutoSize = True
             chkNewOnly.Checked = False
             chkNewOnly.Margin = New Padding(4, 9, 12, 4)
             AddHandler chkNewOnly.CheckedChanged, Sub() FillGrid()
             top.Controls.Add(chkNewOnly)
-            top.Controls.Add(Btn("Tick all new", Sub() SetAll(True)))
+            top.Controls.Add(Btn("Tick all", Sub() SetAll(True)))
             top.Controls.Add(Btn("Untick all", Sub() SetAll(False)))
             top.Controls.Add(Btn("Move up", Sub() MoveRow(-1)))
             top.Controls.Add(Btn("Move down", Sub() MoveRow(1)))
@@ -344,8 +356,10 @@ Namespace UI
             lblSummary.Margin = New Padding(12, 9, 4, 4)
             top.Controls.Add(lblSummary)
 
-            Dim hintLbl = Hint("Ticked 'New' rows are written into the editor. You can fix names, descriptions, icons (WoW icon names) and the Extra column " &
-                            "(achievement tab, perk max rank or codex rarity) before building. 'Missing' rows are only information. " &
+            Dim hintLbl = Hint("Ticked 'New' and 'Changed' rows are written into the editor. You can fix names, descriptions, icons (WoW icon names) and the Extra column " &
+                            "(achievement tab, perk max rank, codex rarity, or a talent's tree|max rank|row|column) before building. " &
+                            "'Changed' rows are values the game changed for things the editor already has (icons, names, ranks, talent positions, gear names); " &
+                            "the old value is in Notes. 'Missing' and grey rows are only information. An achievement whose id starts with '?' was found by its title only: type its save id in the Id column to add it. " &
                             "New zones are added after the last zone in the order shown; use Move up/down to change it.")
             hintLbl.Dock = DockStyle.Top
             hintLbl.Padding = New Padding(8, 0, 8, 4)
@@ -362,7 +376,7 @@ Namespace UI
             grid.Columns.Add(New DataGridViewCheckBoxColumn With {.DataPropertyName = "Include", .HeaderText = "Add", .Width = 44})
             AddCol("Status", "Status", 70, True)
             AddCol("Category", "Category", 150, True)
-            AddCol("Id", "Id", 160, True)
+            AddCol("Id", "Id", 160, False)   ' editable only for "?" ids (see CellBeginEdit)
             AddCol("Name", "Name", 180, False)
             AddCol("Description", "Description", 260, False)
             AddCol("Icon", "Icon", 170, False)
@@ -375,6 +389,18 @@ Namespace UI
             AddHandler grid.CellFormatting, AddressOf GridFormat
             AddHandler grid.CellValueChanged, Sub() UpdateSummary()
             AddHandler grid.DataError, Sub(s, ev) ev.ThrowException = False
+            AddHandler grid.CellBeginEdit, Sub(s, ev)
+                                               If grid.Columns(ev.ColumnIndex).DataPropertyName = "Id" AndAlso
+                                                  Not rows(ev.RowIndex).Id.StartsWith("?") Then ev.Cancel = True
+                                           End Sub
+            AddHandler grid.CellEndEdit, Sub(s, ev)
+                                             Dim f = rows(ev.RowIndex)
+                                             If grid.Columns(ev.ColumnIndex).DataPropertyName = "Id" AndAlso Not f.Id.StartsWith("?") AndAlso f.Id.Trim() <> "" Then
+                                                 f.Id = f.Id.Trim()
+                                                 f.Include = True
+                                                 grid.Refresh() : UpdateSummary()
+                                             End If
+                                         End Sub
 
             page.Controls.Add(grid)
             page.Controls.Add(hintLbl)
@@ -390,8 +416,13 @@ Namespace UI
         Private Sub GridFormat(sender As Object, e As DataGridViewCellFormattingEventArgs)
             If e.RowIndex < 0 OrElse e.RowIndex >= rows.Count Then Return
             Dim f = rows(e.RowIndex)
-            Dim c = If(f.Status = FindStatus.New, If(f.Category = Cat.Key, Color.FromArgb(255, 243, 214), Color.FromArgb(226, 245, 232)),
-                       If(f.Status = FindStatus.Missing, Color.FromArgb(253, 232, 232), SystemColors.Window))
+            Dim c As Color
+            Select Case f.Status
+                Case FindStatus.New : c = If(f.Category = Cat.Key, Color.FromArgb(255, 243, 214), Color.FromArgb(226, 245, 232))
+                Case FindStatus.Changed : c = Color.FromArgb(221, 235, 252)
+                Case FindStatus.Missing : c = Color.FromArgb(253, 232, 232)
+                Case Else : c = Color.FromArgb(240, 240, 240)
+            End Select
             If Not Cat.Writable.Contains(f.Category) Then c = Color.FromArgb(240, 240, 240)
             e.CellStyle.BackColor = c
             e.CellStyle.ForeColor = Color.Black
@@ -401,7 +432,7 @@ Namespace UI
             rows.RaiseListChangedEvents = False
             rows.Clear()
             For Each f In allFindings
-                If chkNewOnly.Checked AndAlso f.Status <> FindStatus.New Then Continue For
+                If chkNewOnly.Checked AndAlso f.Status <> FindStatus.New AndAlso f.Status <> FindStatus.Changed Then Continue For
                 rows.Add(f)
             Next
             rows.RaiseListChangedEvents = True
@@ -410,13 +441,17 @@ Namespace UI
         End Sub
 
         Private Sub UpdateSummary()
-            Dim ticked = allFindings.Where(Function(f) f.Include AndAlso f.Status = FindStatus.New AndAlso Cat.Writable.Contains(f.Category)).Count()
-            lblSummary.Text = $"{allFindings.Count} rows, {ticked} ticked to add"
+            Dim ticked = allFindings.Where(Function(f) f.Include AndAlso Writes(f)).Count()
+            lblSummary.Text = $"{allFindings.Count} rows, {ticked} ticked to write"
         End Sub
+
+        Private Shared Function Writes(f As Finding) As Boolean
+            Return (f.Status = FindStatus.New OrElse f.Status = FindStatus.Changed) AndAlso Cat.Writable.Contains(f.Category)
+        End Function
 
         Private Sub SetAll(onOff As Boolean)
             For Each f In allFindings
-                f.Include = onOff AndAlso f.Status = FindStatus.New AndAlso Cat.Writable.Contains(f.Category)
+                f.Include = onOff AndAlso Writes(f)
             Next
             grid.Refresh()
             UpdateSummary()

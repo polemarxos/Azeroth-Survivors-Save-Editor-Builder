@@ -8,6 +8,7 @@ Namespace UI
         Public Property ExePath As String = ""
         Public Property SavePath As String = ""
         Public Property TemplatePath As String = ""
+        Public Property WowPath As String = ""
         Public Property OutDir As String = ""
         Public Property OpenAfterBuild As Boolean = True
 

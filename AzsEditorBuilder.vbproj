@@ -10,6 +10,7 @@
     <MyType>WindowsFormsWithCustomSubMain</MyType>
     <OptionStrict>On</OptionStrict>
     <OptionInfer>On</OptionInfer>
+    <RemoveIntegerChecks>true</RemoveIntegerChecks>
     <OptionExplicit>On</OptionExplicit>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
@@ -26,6 +27,7 @@
     <EmbeddedResource Include="app.ico" Condition="Exists('app.ico')" LogicalName="AzsEditorBuilder.app.ico" />
     <Compile Remove="tools\**" />
     <None Remove="tools\**" />
+    <EmbeddedResource Include="Core\gear-icons.json" LogicalName="AzsEditorBuilder.gear-icons.json" />
   </ItemGroup>
 
 </Project>
