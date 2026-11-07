@@ -71,7 +71,7 @@ Namespace Core
                     Dim t = known.GetProp(Cat.Achievement, sib, "name"), d = known.GetProp(Cat.Achievement, sib, "desc")
                     out.Add(New Finding With {.Category = Cat.Achievement, .Id = id,
                         .Name = If(t, "").Replace(sName, z.Name), .Description = If(d, "").Replace(sName, z.Name),
-                        .Icon = "INV_Misc_QuestionMark", .Extra = known.AchInfo(sib).Tab,
+                        .Icon = ZoneIcon(z.Name, known, sofar), .Extra = known.AchInfo(sib).Tab,
                         .Notes = $"made by the game for every zone (like {sib}); pick an icon"})
                     Generated.Add(id)
                 Next
@@ -148,12 +148,18 @@ Namespace Core
                     Dim desc = FillPlaceholders(Fields(di).Text)
                     ' icon: right after the description (or after the id that follows it)
                     Dim icon As String = Nothing, idTxt As String = Nothing
-                    For j = di + 1 To Math.Min(di + 3, Fields.Count - 1)
+                    ' layout: title, text, [id], icon - the icon must follow the text or the id directly
+                    For j = di + 1 To Math.Min(di + 2, Fields.Count - 1)
                         Dim x = Fields(j).Text
-                        If icon Is Nothing AndAlso IsIcon(x) Then icon = x
-                        If idTxt Is Nothing AndAlso IdRx.IsMatch(x) AndAlso Not usedIds.Contains(x) AndAlso x.Contains(":"c) Then idTxt = x
+                        If IsIcon(x) Then icon = x : Exit For
+                        If idTxt Is Nothing AndAlso IdRx.IsMatch(x) AndAlso Not usedIds.Contains(x) AndAlso x.Contains(":"c) Then
+                            idTxt = x
+                        ElseIf Not IdRx.IsMatch(x) Then
+                            Exit For
+                        End If
                     Next
                     If idTxt Is Nothing Then idTxt = IdNearCode(Fields(i).Offset, usedIds, knownPrefixes)
+                    If icon Is Nothing AndAlso idTxt IsNot Nothing Then icon = IconAfterId(idTxt)
                     If icon Is Nothing Then icon = IconNearCode(Fields(i).Offset)
                     Dim f As New Finding With {.Category = Cat.Achievement, .Name = t, .Description = desc, .Icon = If(icon, "INV_Misc_QuestionMark"),
                         .Offset = -1, .Extra = TabFor(idTxt, known)}
@@ -179,6 +185,8 @@ Namespace Core
         Private Shared Function TabFor(id As String, known As KnownData) As String
             If id Is Nothing Then Return "Feats"
             Dim pre = If(id.Contains(":"c), id.Substring(0, id.IndexOf(":"c)), id)
+            Dim byName = TabByName(pre, known)
+            If byName IsNot Nothing Then Return byName
             Dim g = known.AchInfo.Where(Function(p) p.Key.StartsWith(pre & ":") OrElse p.Key = pre).GroupBy(Function(p) p.Value.Tab).OrderByDescending(Function(x) x.Count()).FirstOrDefault()
             Return If(g Is Nothing, "Feats", g.Key)
         End Function
@@ -202,7 +210,7 @@ Namespace Core
                                Dim d = Math.Abs(code - idCode)
                                Dim looksAch = prefixes.Any(Function(p) id.StartsWith(p))
                                If Not looksAch AndAlso (Not before OrElse d > &H80) Then Return   ' a bare id must sit right before the title
-                               If d > &H200 Then Return
+                               If d > If(before, &H200, &H400) Then Return   ' the id can be stored a little after the title and text
                                Dim score = If(before, d, d + &H1000)                            ' prefer ids set before the title
                                If score < bd Then best = id : bd = score
                            End Sub
@@ -231,6 +239,59 @@ Namespace Core
                 Next
             Next
             Return best
+        End Function
+        ' a zone achievement has no icon of its own in the game: borrow the icon of the achievement about clearing that zone
+        Private Shared Function ZoneIcon(zoneName As String, known As KnownData, sofar As List(Of Finding)) As String
+            Dim cands As New List(Of (Score As Integer, Icon As String))
+            Dim rate = Function(text As String) As Integer
+                           If text Is Nothing OrElse Not text.Contains(zoneName) Then Return 0
+                           If text.Contains("Complete " & zoneName) OrElse text.Contains("in " & zoneName) OrElse text.Contains("Beat " & zoneName) Then Return 2
+                           Return 1
+                       End Function
+            For Each f In sofar.Where(Function(x) x.Category = Cat.Achievement AndAlso Not String.IsNullOrEmpty(x.Icon) AndAlso x.Icon <> "INV_Misc_QuestionMark" AndAlso Not x.Id.StartsWith("zone"))
+                Dim r = rate(f.Description)
+                If r > 0 Then cands.Add((r, f.Icon))
+            Next
+            For Each id In known.IdsOf(Cat.Achievement).Where(Function(x) Not x.StartsWith("zone"))
+                Dim ic = known.GetProp(Cat.Achievement, id, "icon")
+                Dim r = rate(known.GetProp(Cat.Achievement, id, "desc"))
+                If ic IsNot Nothing AndAlso r > 0 Then cands.Add((r, ic))
+            Next
+            Return If(cands.Count = 0, "INV_Misc_QuestionMark", cands.OrderByDescending(Function(x) x.Score).First().Icon)
+        End Function
+
+        ''' <summary>The icon the code stores right after an achievement's id (id first, then icon).</summary>
+        Friend Function IconAfterId(id As String) As String
+            Dim codes As New List(Of Integer)
+            For Each x In InlineIds
+                If x.Id = id Then codes.Add(x.Code)
+            Next
+            For Each fi In FieldsWithText(id)
+                Dim off = CInt(Fields(fi).Offset)
+                For Each c In CodeStr
+                    If c.Str = off Then codes.Add(c.Code)
+                Next
+            Next
+            For Each code In codes
+                Dim i = CodeStr.BinarySearch((code, 0), Comparer(Of (Code As Integer, Str As Integer)).Create(Function(a, c) a.Code.CompareTo(c.Code)))
+                If i < 0 Then i = Not i
+                For k = i To Math.Min(CodeStr.Count - 1, i + 3)
+                    Dim c = CodeStr(k)
+                    If c.Code <= code Then Continue For
+                    If c.Code - code > &H60 Then Exit For
+                    Dim txt = Encoding.UTF8.GetString(Data, c.Str, RefLen(c.Str))
+                    If IsIcon(txt) Then Return txt
+                Next
+                ' the same icon as the entry before is loaded once, just before the id
+                For k = Math.Min(CodeStr.Count - 1, i) To Math.Max(0, i - 3) Step -1
+                    Dim c = CodeStr(k)
+                    If c.Code >= code Then Continue For
+                    If code - c.Code > &H60 Then Exit For
+                    Dim txt = Encoding.UTF8.GetString(Data, c.Str, RefLen(c.Str))
+                    If IsIcon(txt) Then Return txt
+                Next
+            Next
+            Return Nothing
         End Function
     End Class
 

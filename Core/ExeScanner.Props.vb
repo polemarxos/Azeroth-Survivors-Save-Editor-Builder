@@ -64,7 +64,7 @@ Namespace Core
             If PeMode Then
                 ' compiled program: neighbouring strings plus the record (struct) the id belongs to
                 AddNeighbourTokens(toks, off, id)
-                If pairNear IsNot Nothing Then AddStructTokens(toks, PairOf(off, pairNear))
+                If pairNear IsNot Nothing Then AddStructTokens(toks, BestRecordPair(off, pairNear))
                 Return toks
             End If
             ' start right after the id (and its closing quote), so the id itself is never read as a value
@@ -201,8 +201,11 @@ Namespace Core
                 For Each p In newToks
                     Dim f = p.Key, tk = p.Value
                     Dim v As String
-                    v = rules.GetValueOrDefault("icon")?.Apply(tk)
-                    If v IsNot Nothing AndAlso IsIcon(v) Then f.Icon = v
+                    Dim icRule = rules.GetValueOrDefault("icon")
+                    v = icRule?.Apply(tk)
+                    ' a weak rule ("first icon nearby") must not replace an icon already read from the game code
+                    Dim hasIcon = Not String.IsNullOrEmpty(f.Icon) AndAlso f.Icon <> "INV_Misc_QuestionMark"
+                    If v IsNot Nothing AndAlso IsIcon(v) AndAlso (Not icRule.IconScan OrElse Not hasIcon) Then f.Icon = v
                     v = rules.GetValueOrDefault("name")?.Apply(tk)
                     If v IsNot Nothing AndAlso IsTitle(v) Then f.Name = v
                     v = rules.GetValueOrDefault("desc")?.Apply(tk)

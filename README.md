@@ -23,6 +23,8 @@ internet connection and no AI service.
   - pets and tabards
   - account perks, with their max rank
   - codex rings, trinkets and armory items
+  - codex legendary abilities for each class, in the game's order, read from the game's ability records
+  - zones, with their real names, in the game's zone order
   - talents, with their tree, max rank, row and column
   - gear: new tiers, new rarity names and new set and weapon names
 - **Detects what changed:**
@@ -36,6 +38,7 @@ internet connection and no AI service.
   - families the game builds for every zone or class (`zone:`, `zone9:`, `class:`, `classlast:`), filled in for every zone and class, including new zones
   - numbered families (`codex:10/50/100`, `talents:1/9`, `pieces:25/100/250`)
   - any achievement title and description the editor doesn't have, with its id taken from the code next to where the title is used. If the id is only built while the game runs, the row shows `?…` and you type the id in yourself.
+- **Reads your save file too.** Give it a save and every codex item, zone, achievement, pet and tabard in it is checked. Any id the editor doesn't know is looked up in the exe: codex items get their name, icon and type (rings & trinkets or armory); new zones get their real name and go after the zone that comes before them in your save. A new legendary ability is ticked when your save has already seen it.
 - **Detects what's gone.** Ids the editor has but the game no longer has are flagged as *Missing* (removed or renamed).
 - **Finds the save seal key.** If the game changes it, the builder finds the new key and can confirm it with one of your saves.
 - **Review before building.** Every change shows up as a row in a grid. You can tick or untick it, fix names, descriptions and icons, and reorder new zones.
@@ -70,7 +73,7 @@ dotnet publish AzsEditorBuilder.vbproj -c Release -r win-x64 --self-contained fa
 | Field | What to pick |
 |---|---|
 | **Game exe** | `AzerothSurvivors.exe` |
-| **Save (optional)** | A save made by this game version. It is used to confirm the save seal key. |
+| **Save (recommended)** | A save made by this game version. It confirms the save seal key and is checked for codex items, zones and achievements the editor doesn't know yet. |
 | **WoW folder (optional)** | Not needed. It's only used for gear that is newer than the built-in icon list. |
 | **Editor to update** | Leave on **Automatic**. The first scan uses the built-in editor; later scans use your last build. |
 
@@ -117,7 +120,8 @@ to update the online editor.
 6. **Gear icons.** The game's gear tables hold WoW display ids. For each class there are set names, a weapon list pointer, then 5 tiers x 8 display ids; each weapon record has 5 names and 5 display ids; PvP records have Alliance and Horde rows. An empty armour id uses the same slot from a lower tier first, then a higher one; an empty PvP id uses regular tier 4. That is the game's own rule. The display ids become icons through the built-in list, which was made by joining the game's display ids with WoW 1.12's `ItemDisplayInfo.dbc` (data from the SurvivorsDragonUi project's extraction). There is an optional MPQ/DBC reader for newer ids.
 7. **Gear.** Each of the editor's gear name lists (set names, slot names, weapons, rarities) is found in the game as a run of strings in the same order. A different string inside the run is a rename; extra strings right after it are new tiers.
 8. **Seal key.** The game stores its save key pre-mixed for HMAC-SHA1 (key XOR 0x36 / 0x5C). The builder finds and decodes that block, and confirms the key against your save when you give it one.
-9. **Writing the editor.** Only the data tables inside `index.html` are changed (`const ACHS=…`, `const PETS=…` and so on), plus small fixes that let the Gear tab show extra tiers and item icons.
+9. **Save file pass.** The save is unsealed and its `seen`, zone and achievement lists are compared with the editor. Unknown ids are matched to their records in the exe (name, icon, zone name at record +16).
+10. **Writing the editor.** Only the data tables inside `index.html` are changed (`const ACHS=…`, `const PETS=…` and so on), plus small fixes that let the Gear tab show extra tiers and item icons.
 
 Tested on the real `AzerothSurvivors.exe` (141 MB): it finds 95,000+ exact strings in about 2 seconds. With entries deliberately removed from the editor, it found every one of them again with the right name, icon and numbers.
 
@@ -134,6 +138,8 @@ AzsEditorBuilder/
 │   ├── ExeScanner.Gear.vb    Gear names, new tiers, item ids and icons
 │   ├── ExeScanner.Pe.vb      Compiled exe support: exact strings, data records, code emulator, tabards
 │   ├── ExeScanner.Ach.vb     Achievement families and achievements found by title
+│   ├── ExeScanner.Codex.vb   Codex legendary abilities per class (ability records)
+│   ├── ExeScanner.Save.vb    Checks your save for ids the editor doesn't know
 │   ├── gear-icons.json       Built-in display id -> icon list for all gear in the game
 │   ├── WowData.vb            Optional WoW 1.12 MPQ + DBC reader (gear newer than the list)
 │   ├── GameData.vb           What the current editor already knows

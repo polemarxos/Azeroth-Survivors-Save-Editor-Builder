@@ -572,8 +572,8 @@ Namespace Core
             res.AddRange(Achievements(known))
             res.AddRange(Zones(known, res))
             If PeMode Then res.AddRange(Simple(known, Cat.Zone, False))
-            res.AddRange(TemplateAchievements(known, res))
             res.AddRange(TitleAchievements(known, res))
+            res.AddRange(TemplateAchievements(known, res))
             res.AddRange(Simple(known, Cat.Pet, False))
             res.AddRange(If(PeMode, StructTabards(known), Simple(known, Cat.Tabard, True)))
             res.AddRange(Simple(known, Cat.Perk, False))
@@ -581,8 +581,10 @@ Namespace Core
             res.AddRange(Simple(known, Cat.Armory, False))
             res.AddRange(Simple(known, Cat.Talent, False))
             res.AddRange(Simple(known, Cat.Ability, False))
+            res.AddRange(LegendaryLists(known))
             res.AddRange(ReadProperties(known, res))
             res.AddRange(GearScan(known))
+            res.AddRange(SavePass(known, res))
 
             ' a zone id also shows up as a field of co-op achievements: it is not an achievement itself
             Dim zoneIds = New HashSet(Of String)(known.IdsOf(Cat.Zone).Concat(res.Where(Function(f) f.Category = Cat.Zone).Select(Function(f) f.Id)))
@@ -643,9 +645,16 @@ Namespace Core
                     If Not prefixed AndAlso w.Length < 3 Then Continue For
                     ' a title the editor already has belongs to an achievement it already has
                     If knownTitles.Contains(title) Then Continue For
-                    Dim icon = nxt.FirstOrDefault(Function(f) IsIcon(f.Text)).Text
+                    ' the icon sits right after the id; if that string was shared with an earlier entry, ask the code
+                    Dim icon = If(nxt.Count > 0 AndAlso IsIcon(nxt(0).Text), nxt(0).Text, Nothing)
+                    If icon Is Nothing AndAlso PeMode Then icon = IconAfterId(w)
+                    If icon Is Nothing AndAlso PeMode Then
+                        Dim tf = Fields.FindIndex(Function(x) x.Text = title)
+                        If tf >= 0 Then icon = IconNearCode(Fields(tf).Offset)
+                    End If
+                    If icon Is Nothing AndAlso Not PeMode Then icon = nxt.FirstOrDefault(Function(f) IsIcon(f.Text)).Text
                     Dim tab As String = Nothing
-                    If Not tabOf.TryGetValue(pre, tab) Then tab = NearestTab(anchors, known, o.Off)
+                    If Not tabOf.TryGetValue(pre, tab) Then tab = If(TabByName(pre, known), NearestTab(anchors, known, o.Off))
                     out.Add(New Finding With {
                         .Category = Cat.Achievement, .Id = w, .Name = title, .Description = If(desc, ""),
                         .Icon = If(icon, "INV_Misc_QuestionMark"), .Extra = If(tab, "Feats"),
@@ -671,6 +680,18 @@ Namespace Core
         Private Shared Function PrefixOf(id As String) As String
             Dim i = id.IndexOf(":"c)
             Return If(i < 0, id, id.Substring(0, i))
+        End Function
+
+        ''' <summary>An id prefix named like a tab ("collection:" -> Collection, "coop:" -> Co-op).</summary>
+        Friend Shared Function TabByName(prefix As String, known As KnownData) As String
+            Dim norm = Function(x As String) New String(x.ToLowerInvariant().Where(AddressOf Char.IsLetter).ToArray())
+            Dim p = norm(prefix)
+            If p.Length < 3 Then Return Nothing
+            For Each t In known.AchInfo.Values.Select(Function(v) v.Tab).Distinct()
+                Dim n = norm(t)
+                If n = p OrElse n.StartsWith(p) OrElse p.StartsWith(n) Then Return t
+            Next
+            Return Nothing
         End Function
 
         Private Shared Function NearestTab(anchors As List(Of (Off As Long, Id As String)), known As KnownData, off As Long) As String
@@ -809,6 +830,11 @@ Namespace Core
                         Dim s = New SaveSeal(p, c.Bytes)
                         If s.Verifies(saveText) Then
                             res.Seal = s : res.Verified = True
+                            Try
+                                Dim ok As Boolean
+                                SavePlain = s.Unseal(saveText, ok)
+                            Catch
+                            End Try
                             res.Changed = current Is Nothing OrElse s.Prefix <> current.Prefix OrElse Not s.Secret.SequenceEqual(current.Secret)
                             res.Note = "Key confirmed with your save (" & c.From & ")."
                             Log(res.Note)

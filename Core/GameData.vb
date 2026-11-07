@@ -43,12 +43,13 @@ Namespace Core
         Public Const Armory = "Codex: armory"
         Public Const Talent = "Talent"
         Public Const Ability = "Ability"
+        Public Const Legendary = "Codex: legendary"
         Public Const Gear = "Gear"
         Public Const GearItem = "Gear item id (info)"
         Public Const Key = "Save seal key"
 
         ''' <summary>Categories whose rows can be written into the editor.</summary>
-        Public ReadOnly Writable As String() = {Achievement, Zone, Pet, Tabard, Perk, Jewelry, Armory, Talent, Ability, Gear, Key}
+        Public ReadOnly Writable As String() = {Achievement, Zone, Pet, Tabard, Perk, Jewelry, Armory, Legendary, Talent, Ability, Gear, Key}
     End Module
 
     Public Structure TalentInfo
@@ -75,6 +76,8 @@ Namespace Core
         Public ReadOnly TreeCount As New List(Of Integer)
         Public ReadOnly ClsOrder As New List(Of Integer)
         Public Gear As JsonObject
+        ''' <summary>Codex legendary abilities per class (CODEX.L): class id -> ability ids in the game's order.</summary>
+        Public ReadOnly Legendary As New Dictionary(Of Integer, List(Of String))
         Public Seal As SaveSeal
 
         Public Shared ReadOnly ClassNames As New Dictionary(Of Integer, String) From {
@@ -201,7 +204,10 @@ Namespace Core
                 Dim l = TryCast(codex("L"), JsonObject)
                 If l IsNot Nothing Then
                     For Each p In l
-                        For Each x In p.Value.AsArray() : k.AllIds.Add(x.GetValue(Of String)()) : Next
+                        Dim lst As New List(Of String)
+                        For Each x In p.Value.AsArray() : k.AllIds.Add(x.GetValue(Of String)()) : lst.Add(x.GetValue(Of String)()) : Next
+                        Dim cid As Integer
+                        If Integer.TryParse(p.Key, cid) Then k.Legendary(cid) = lst
                     Next
                 End If
             End If

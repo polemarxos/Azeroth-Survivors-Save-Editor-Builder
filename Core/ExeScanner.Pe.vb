@@ -142,6 +142,7 @@ Namespace Core
         ''' <summary>lea r64,[rip+disp32] to a string, with its length in a mov a few instructions later.</summary>
         Private Sub ScanLeas(raw As Long, size As Long, va As Long)
             Dim b = Data
+            Dim pending As New List(Of (Code As Integer, Str As Integer))
             Dim e = CInt(Math.Min(raw + size, b.Length) - 48)
             For j = CInt(raw) To e
                 Dim r = b(j)
@@ -152,14 +153,21 @@ Namespace Core
                 Dim o = VaToOff(tgt)
                 If o < 0 Then Continue For
                 If RefLen.ContainsKey(CInt(o)) Then CodeStr.Add((j, CInt(o))) : Continue For
+                Dim found = False
                 For k = nxt To nxt + 36
                     Dim imm = ImmAt(b, k)
                     If imm >= 1 AndAlso imm <= 600 AndAlso Printable(o, imm) Then
                         RefLen(CInt(o)) = imm
                         CodeStr.Add((j, CInt(o)))
+                        found = True
                         Exit For
                     End If
                 Next
+                If Not found Then pending.Add((j, CInt(o)))
+            Next
+            ' a string can be loaded without its length nearby (it was set up elsewhere): keep those uses too
+            For Each pnd In pending
+                If RefLen.ContainsKey(pnd.Str) Then CodeStr.Add(pnd)
             Next
         End Sub
 
@@ -363,6 +371,24 @@ Namespace Core
         ''' The record around a pair, as values keyed by their place: "s+24" = string at +24 bytes,
         ''' "b+40" = byte, "i+40" = 32-bit integer, "f+40" = whole-number float.
         ''' </summary>
+        ' An id can be pointed at from several places (a class's ability list and the ability's own record);
+        ' the record is the place with the most strings around it.
+        Private Function BestRecordPair(stringOff As Long, spans As List(Of (Lo As Long, Hi As Long))) As Integer
+            Dim l As List(Of Integer) = Nothing
+            If Not PairsTo.TryGetValue(CInt(stringOff), l) OrElse spans Is Nothing OrElse spans.Count = 0 Then Return -1
+            Dim best = -1, bestScore = -1
+            For Each p In l
+                Dim near = spans.Any(Function(sp) p >= sp.Lo - 8192 AndAlso p <= sp.Hi + 8192)
+                If Not near Then Continue For
+                Dim score = 0
+                For d = 16 To 64 Step 8
+                    If StrAt(p + d) IsNot Nothing Then score += 1
+                Next
+                If score > bestScore Then bestScore = score : best = p
+            Next
+            Return best
+        End Function
+
         Private Sub AddStructTokens(toks As List(Of Tok), pair As Integer)
             If pair < 0 Then Return
             For d = -192 To 192

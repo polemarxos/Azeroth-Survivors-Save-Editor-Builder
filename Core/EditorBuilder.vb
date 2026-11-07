@@ -57,6 +57,7 @@ Namespace Core
             AddZones(tb, pick, log)
             AddSimple(tb, pick, log)
             Talents(tb, known, pick, log)
+            Legendary(tb, findings.Where(Function(f) f.Category = Cat.Legendary).ToList(), log)
             ChangedValues(tb, pick, log)
             Gear(t, tb, pick, log)
             tb.Flush()
@@ -186,6 +187,31 @@ Namespace Core
             Next
             tb.Put("TREES", JsonValue.Create(String.Join("|", trees.Select(Function(x) String.Join(",", x)))))
             log.Add($"Talents: added {added}, moved/re-ranked {moved}.")
+        End Sub
+
+        ' ---------- codex legendary abilities ----------
+
+        Private Sub Legendary(tb As Tables, rows As List(Of Finding), log As List(Of String))
+            Dim byClass = rows.Where(Function(f) f.Data IsNot Nothing AndAlso f.Data.ContainsKey("order")).GroupBy(Function(f) f.Path)
+            For Each g In byClass
+                If Not g.Any(Function(f) f.Include) Then Continue For
+                Dim cls = g.Key.Substring(2)
+                Dim L = tb.Sub_("CODEX", "L")
+                If L Is Nothing Then Continue For
+                Dim old = TryCast(L(cls), JsonArray)
+                Dim oldIds = If(old Is Nothing, New List(Of String), old.Select(Function(x) x.GetValue(Of String)()).ToList())
+                Dim skipNew = g.Where(Function(f) f.Status = FindStatus.New AndAlso Not f.Include).Select(Function(f) f.Id).ToHashSet()
+                Dim keepOld = g.Where(Function(f) f.Prop = "removed" AndAlso Not f.Include).Select(Function(f) f.Id).ToList()
+                Dim ids = g.First().Data("order").Split(","c).Where(Function(x) Not skipNew.Contains(x)).ToList()
+                ids.AddRange(keepOld.Where(Function(x) Not ids.Contains(x)))
+                L(cls) = New JsonArray(ids.Select(Function(x) CType(J(x), JsonNode)).ToArray())
+                tb.Touch("CODEX")
+                For Each f In g.Where(Function(x) x.Status = FindStatus.New AndAlso x.Include)
+                    Dim ab = tb.Obj("IC.ab")
+                    If ab IsNot Nothing Then ab(f.Id) = New JsonArray(J(IconOf(f)), J(NonEmpty(f.Name, f.Id))) : tb.Touch("IC.ab")
+                Next
+                log.Add($"Codex legendary ({g.First().Extra}): " & String.Join(", ", ids))
+            Next
         End Sub
 
         ' ---------- changed values ----------
